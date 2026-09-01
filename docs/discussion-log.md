@@ -21,6 +21,10 @@
 - 每次只执行一个批次，当前批次验收完成后才进入下一批。
 - 每批在开发前从 `master` 创建独立分支；完成后提交并推送分支，再以非快进方式合并和推送 `master`。
 - 远端保留批次分支；已推送历史通过 `git revert` 回滚，不使用强制推送改写历史。
+- 批次 0 采用 Expo SDK 57、React Native 0.86、React 19 和 TypeScript 6。
+- v0.1 开发阶段使用 Expo Go；只有出现不受支持的原生模块时才切换 Development Build。
+- SQL 层采用 Drizzle ORM，并通过 Repository 隔离页面、领域层和具体数据库操作。
+- iOS 和 Android 是 v0.1 产品目标；SQLite Web 仍为 alpha，Web 仅作为开发辅助平台。
 
 ### 设计方向
 

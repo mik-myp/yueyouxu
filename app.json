@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Yueyouxu",
+    "slug": "yueyouxu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "yueyouxu",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.mikmyp.yueyouxu",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.mikmyp.yueyouxu",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "headers": {
+            "Cross-Origin-Embedder-Policy": "credentialless",
+            "Cross-Origin-Opener-Policy": "same-origin"
+          }
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

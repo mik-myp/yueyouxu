@@ -7,6 +7,7 @@
 - [产品简报](./product-brief.md)：产品定位、范围、核心流程和 UI 原则。
 - [UI 布局规范](./ui-layout.md)：已确认的导航、页面结构、记录交互和视觉约束。
 - [v0.1 开发计划](./development-plan.md)：分批范围、验收门槛、决策点和 Git 工作流。
+- [批次 0 工程基线结果](./batch-0-result.md)：已确认版本、技术决策、验证结果和已知事项。
 - [架构草案](./architecture.md)：Expo、React Native、Restyle、本地数据、分析算法和可选 AI 服务。
 - [讨论记录](./discussion-log.md)：按日期追加已确认事项、提案和待决问题。
 
