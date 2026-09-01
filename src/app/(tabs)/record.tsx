@@ -1,11 +1,12 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import {
-  Droplets,
-  FileText,
-  HeartPulse,
-  Smile,
-  Sparkles,
-} from 'lucide-react-native';
+  CheckCircle,
+  Drop,
+  Heartbeat,
+  NotePencil,
+  Smiley,
+  Sparkle,
+} from '@/components/soft-icons';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
@@ -45,7 +46,7 @@ export default function RecordScreen() {
   }
 
   function selectedDateLabel() {
-    if (selectedDate === prototypeToday) return '9月1日 · 今天 · 经期第1天';
+    if (selectedDate === prototypeToday) return '9月1日 · 今天';
     const [, month, day] = selectedDate.split('-');
     return `${Number(month)}月${Number(day)}日`;
   }
@@ -55,14 +56,19 @@ export default function RecordScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        style={styles.scroll}
         tabIndex={0}
       >
-        <Box paddingHorizontal="page" paddingTop="s">
-          <Text variant="title">记录</Text>
-          <Text variant="caption">选择日期，查看或补充当天状态</Text>
+        <Box paddingHorizontal="page" paddingTop="m">
+          <Text style={styles.title} variant="title">
+            记录
+          </Text>
+          <Text style={styles.subtitle} variant="caption">
+            选择日期，查看或补充当天状态
+          </Text>
         </Box>
 
-        <Box marginTop="s">
+        <Box marginTop="m">
           <MonthCalendar
             onSelectDate={selectDate}
             selectedDate={selectedDate}
@@ -74,11 +80,15 @@ export default function RecordScreen() {
           flexDirection="row"
           justifyContent="space-between"
           paddingHorizontal="page"
-          paddingVertical="m"
+          style={styles.dateSummary}
         >
           <Box>
-            <Text variant="sectionTitle">{selectedDateLabel()}</Text>
-            <Text variant="caption">记录会用于个人周期分析</Text>
+            <Text style={styles.dateTitle} variant="sectionTitle">
+              {selectedDateLabel()}
+            </Text>
+            <Text style={styles.dateCaption} variant="caption">
+              {periodActive ? '经期中 · 记录会用于个人周期分析' : '非经期记录'}
+            </Text>
           </Box>
           <Pressable
             accessibilityRole="button"
@@ -88,6 +98,19 @@ export default function RecordScreen() {
               !periodActive && styles.periodButtonInactive,
             ]}
           >
+            {periodActive ? (
+              <CheckCircle
+                color={theme.colors.companionSurface}
+                size={18}
+                weight="fill"
+              />
+            ) : (
+              <Drop
+                color={theme.colors.companionBerry}
+                size={18}
+                weight="duotone"
+              />
+            )}
             <Text
               style={periodActive ? styles.periodButtonText : undefined}
               variant="label"
@@ -98,43 +121,44 @@ export default function RecordScreen() {
         </Box>
 
         <Box
-          backgroundColor="surface"
-          borderBottomColor="border"
+          backgroundColor="companionSurface"
+          borderBottomColor="companionCashmereStrong"
           borderBottomWidth={StyleSheet.hairlineWidth}
-          borderTopColor="border"
+          borderTopColor="companionCashmereStrong"
           borderTopWidth={StyleSheet.hairlineWidth}
         >
           <RecordRow
-            accent={theme.colors.periodActual}
-            icon={Droplets}
+            accent={theme.colors.companionBerry}
+            icon={Drop}
             label="流量"
             onPress={() => openSheet('flow')}
             value={draft.flow}
           />
           <RecordRow
-            accent={theme.colors.periodActual}
-            icon={HeartPulse}
+            accent={theme.colors.companionBerry}
+            icon={Heartbeat}
             label="痛感"
             onPress={() => openSheet('pain')}
             value={draft.pain}
           />
           <RecordRow
-            accent={theme.colors.symptom}
-            icon={Sparkles}
+            accent={theme.colors.companionLavender}
+            icon={Sparkle}
             label="症状"
             onPress={() => openSheet('symptoms')}
             value={draft.symptoms.length ? draft.symptoms.join('、') : '未记录'}
           />
           <RecordRow
-            accent={theme.colors.positive}
-            icon={Smile}
+            accent={theme.colors.companionSage}
+            icon={Smiley}
             label="心情"
             onPress={() => openSheet('mood')}
             value={draft.mood}
           />
           <RecordRow
             accent={theme.colors.textMuted}
-            icon={FileText}
+            icon={NotePencil}
+            isLast
             label="备注"
             onPress={() => openSheet('note')}
             value={draft.note || '未记录'}
@@ -158,22 +182,48 @@ export default function RecordScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 28,
+    paddingBottom: 32,
+  },
+  dateCaption: {
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  dateSummary: {
+    minHeight: 86,
+    paddingVertical: 16,
+  },
+  dateTitle: {
+    color: theme.colors.companionInk,
   },
   periodButton: {
     alignItems: 'center',
-    backgroundColor: theme.colors.periodAction,
-    borderColor: theme.colors.periodAction,
-    borderRadius: 8,
+    backgroundColor: theme.colors.companionBerry,
+    borderColor: theme.colors.companionBerry,
+    borderCurve: 'continuous',
+    borderRadius: 14,
     borderWidth: 1,
+    boxShadow: `0 4px 10px ${theme.colors.companionShadow}, inset 0 1px 0 rgba(255, 255, 255, 0.28)`,
+    flexDirection: 'row',
+    gap: 6,
     justifyContent: 'center',
-    minHeight: 42,
+    minHeight: 44,
     paddingHorizontal: 14,
   },
   periodButtonInactive: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.companionSurface,
+    boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
   },
   periodButtonText: {
-    color: theme.colors.surface,
+    color: theme.colors.companionSurface,
+  },
+  scroll: {
+    backgroundColor: theme.colors.companionCanvas,
+  },
+  subtitle: {
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  title: {
+    color: theme.colors.companionInk,
   },
 });

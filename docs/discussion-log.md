@@ -39,6 +39,20 @@
 - 以“周期弧”作为首页主要视觉，其余界面保持克制和清晰。
 - 日历不使用装饰卡片，记录区采用带分隔线的统一列表，不堆叠独立卡片。
 - 实际记录、算法预测和 AI 解读必须具有不同视觉与文案身份。
+- WebView 方案的推荐视觉方向命名为 `Soft Companion`，整体控制为 70% 成熟清晰、20% 柔软黏土触感和 10% 卡通插画与微动画。
+- 以 Better Design 的 `Sorbet` 作为柔和日历和粉彩状态的主要视觉参考，以 `Cashmere` 提高成年感和长期耐看度，以 `1st-Pouf` 提供快速记录控件的局部按压感。
+- 卡通插画仅用于首次引导、空状态、保存成功和少量反馈，不持续占据日历、记录和趋势等核心界面。
+- shadcn/ui 只作为行为、可访问性和源码基础；项目将维护自己的语义令牌、领域组件和私有 Registry，不直接套用默认 SaaS 外观或外部完整主题。
+- 不采用 NeoBrutalism 或 8bitcn 作为主界面风格，也不混装多套外部主题。
+- 已确认现有 Expo + React Native + Restyle 能实现 `Soft Companion`；shadcn Registry 的源码不能直接复用，但其视觉语言可由 Restyle、React Native 样式、SVG、Reanimated 和原生底部面板复现。
+- `Sorbet`、`Cashmere` 与 `Soft Pouf` 不再作为三套互斥方案：Sorbet 负责日历和柔和状态色，Cashmere 负责成熟结构，Soft Pouf 只负责记录控件和导航选中态的局部触感。
+- 新增独立的 `批次 1.5：Soft Companion 视觉验证`，只改造记录页、一个记录详情底部面板和底部导航，沿用固定模拟数据，不接触 SQLite、Repository、领域模型、预测或持久化状态。
+- 视觉验证必须覆盖 iOS 与 Android 真机、安全区、短屏、底部面板手势与键盘、中文文本、触控区、双平台阴影和减少动态效果。
+- 只有真机验收通过并由用户明确确认后，才把该视觉推广到今天页、趋势页、设置页、首次设置和状态页；否则先调整复验或放弃。
+- 批次 1.5 已在 `batch/1.5-soft-companion-visual-validation` 分支完成代码实现：记录页、症状面板和自定义底部导航使用 `Soft Companion`，其他页面内容与数据层未改造。
+- Phosphor 仅通过项目 `soft-icons` 边界按图标路径引入，避免 Metro 将整套图标打包；Lucide 暂时保留给本批次范围外的页面。
+- 浏览器移动尺寸、标签切换、症状多选、非经期日期、减少动态效果和 WCAG A/AA 自动检查已通过；阴影、连续圆角、底部面板手感和安全区作为真机验收关注项记录在批次结果中。
+- 用户已确认批次 1.5 的 `Soft Companion` 视觉方向“通过”；`Sorbet + Cashmere + Soft Pouf` 成为后续页面可采用的视觉基线，但推广必须进入对应后续批次。
 
 ### 架构提案
 
@@ -47,9 +61,13 @@
 - 用户 API Key 存入 SecureStore，不进入 SQLite 或日志。
 - AI 调用前展示数据发送摘要，默认不发送备注原文。
 - AI 功能的首个版本优先兼容 Chat Completions；Responses API 作为独立协议适配器评估。
+- 如果正式切换到 WebView，优先采用 `Capacitor + React + Vite + TypeScript + shadcn/ui + Tailwind CSS v4`，不建议把全屏 WebView 长期嵌入 Expo。
+- WebView 技术路线需要先用记录页原型验证 Calendar、Drawer、软键盘、返回手势、离线存储和 iOS/Android 真机表现，再替换当前 Expo + React Native + Restyle 架构。
+- 外部 shadcn Registry 不安装包含数百组件的整套 `all`；按需审查并引入组件源码，统一为项目设计令牌和移动端规范。
 
 ### 待讨论
 
+- 是否因后续非视觉需求正式从 Expo + React Native + Restyle 切换到 Capacitor WebView 技术路线。
 - 数据库是否需要应用级加密。
 - 后续提醒类型和数据导入/导出格式。
 - 后续版本的云同步和账户体系边界。

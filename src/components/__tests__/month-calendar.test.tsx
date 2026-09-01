@@ -5,9 +5,9 @@ import { MonthCalendar } from '@/components/month-calendar';
 import { prototypeToday } from '@/features/prototype/mock-data';
 import { theme } from '@/theme';
 
-jest.mock('lucide-react-native', () => ({
-  ChevronLeft: 'ChevronLeft',
-  ChevronRight: 'ChevronRight',
+jest.mock('@/components/soft-icons', () => ({
+  CaretLeft: 'CaretLeft',
+  CaretRight: 'CaretRight',
 }));
 
 describe('MonthCalendar', () => {
