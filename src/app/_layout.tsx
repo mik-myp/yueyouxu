@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '@shopify/restyle';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { theme } from '@/theme';
 
@@ -9,8 +11,18 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider theme={theme}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <BottomSheetModalProvider>
+          <Head>
+            <title>月有序</title>
+          </Head>
+          <StatusBar style="dark" />
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: theme.colors.background },
+              headerShown: false,
+            }}
+          />
+        </BottomSheetModalProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
