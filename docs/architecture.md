@@ -16,25 +16,27 @@ v0.1 只交付本地离线基础闭环：首次设置、经期开始和结束、
 
 以下能力不进入 v0.1：备孕模式、易孕期或排卵预测、暗色模式、AI 分析与提供商配置、账户和同步、通知提醒、数据导入/导出、桌面小组件及健康平台接入。相关架构可以预留清晰边界，但不提前实现界面、数据表或适配器。
 
-## 候选技术栈
+## 技术栈
 
-以下均为提案，应在初始化项目时按目标 Expo SDK 验证版本兼容性。
+批次 0 已基于 Expo SDK 57 完成核心依赖的安装、类型检查和三平台打包验证。具体版本由 `package-lock.json` 锁定，验证详情参见 [批次 0 工程基线结果](./batch-0-result.md)。
 
-| 领域 | 候选实现 |
-| --- | --- |
-| 路由 | Expo Router |
-| 设计令牌和组件变体 | `@shopify/restyle` |
-| 本地数据库 | `expo-sqlite` |
-| SQL 与迁移 | Drizzle ORM，或保持一层轻量 Repository |
-| 敏感配置 | `expo-secure-store` |
-| 月历 | `react-native-calendars` + 自定义日期单元 |
-| 周期弧与简单图表 | `react-native-svg` |
-| 动画 | `react-native-reanimated` |
-| 手势 | `react-native-gesture-handler` |
-| 记录面板 | `@gorhom/bottom-sheet` |
-| 长列表 | `@shopify/flash-list` |
-| 通知 | `expo-notifications` |
-| 生物识别锁 | `expo-local-authentication` |
+| 领域               | 候选实现                                  |
+| ------------------ | ----------------------------------------- |
+| 路由               | Expo Router                               |
+| 设计令牌和组件变体 | `@shopify/restyle`                        |
+| 本地数据库         | `expo-sqlite`                             |
+| SQL 与迁移         | Drizzle ORM + Repository                  |
+| 敏感配置           | `expo-secure-store`                       |
+| 月历               | `react-native-calendars` + 自定义日期单元 |
+| 周期弧与简单图表   | `react-native-svg`                        |
+| 动画               | `react-native-reanimated`                 |
+| 手势               | `react-native-gesture-handler`            |
+| 记录面板           | `@gorhom/bottom-sheet`                    |
+| 长列表             | `@shopify/flash-list`                     |
+| 通知               | `expo-notifications`                      |
+| 生物识别锁         | `expo-local-authentication`               |
+
+表中的敏感配置、通知、生物识别和长列表方案仍属于后续版本候选项，未在 v0.1 批次 0 安装。
 
 ## 模块边界
 
