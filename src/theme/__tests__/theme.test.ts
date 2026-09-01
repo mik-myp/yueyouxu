@@ -5,8 +5,8 @@ describe('theme', () => {
     expect(theme.colors.periodActual).not.toBe(theme.colors.periodPredicted);
   });
 
-  it('keeps Soft Companion tokens separate from the existing app theme', () => {
-    expect(theme.colors.companionCanvas).not.toBe(theme.colors.background);
-    expect(theme.colors.companionBerry).not.toBe(theme.colors.periodActual);
+  it('promotes Soft Companion tokens to the app theme', () => {
+    expect(theme.colors.companionCanvas).toBe(theme.colors.background);
+    expect(theme.colors.companionBerry).toBe(theme.colors.periodActual);
   });
 });

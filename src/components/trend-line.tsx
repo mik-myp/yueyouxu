@@ -20,9 +20,16 @@ export function TrendLine() {
       <Path
         d="M 24 78 C 66 72, 76 48, 112 58 S 172 88, 208 70 S 264 44, 296 54"
         fill="none"
-        stroke={theme.colors.periodActual}
+        stroke={theme.colors.companionBerrySoft}
         strokeLinecap="round"
-        strokeWidth="3"
+        strokeWidth="9"
+      />
+      <Path
+        d="M 24 78 C 66 72, 76 48, 112 58 S 172 88, 208 70 S 264 44, 296 54"
+        fill="none"
+        stroke={theme.colors.companionBerry}
+        strokeLinecap="round"
+        strokeWidth="3.5"
       />
       {[
         [24, 78],
@@ -33,10 +40,10 @@ export function TrendLine() {
         <Circle
           cx={cx}
           cy={cy}
-          fill={theme.colors.surface}
+          fill={theme.colors.companionSurface}
           key={`${cx}-${cy}`}
           r="5"
-          stroke={theme.colors.periodActual}
+          stroke={theme.colors.companionBerry}
           strokeWidth="2.5"
         />
       ))}

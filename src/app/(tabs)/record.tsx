@@ -135,7 +135,7 @@ export default function RecordScreen() {
             value={draft.flow}
           />
           <RecordRow
-            accent={theme.colors.companionBerry}
+            accent={theme.colors.companionApricot}
             icon={Heartbeat}
             label="痛感"
             onPress={() => openSheet('pain')}

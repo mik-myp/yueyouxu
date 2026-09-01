@@ -23,7 +23,16 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { Check, Sparkle, X } from '@/components/soft-icons';
+import {
+  Check,
+  Drop,
+  Heartbeat,
+  NotePencil,
+  Smiley,
+  Sparkle,
+  X,
+  type Icon,
+} from '@/components/soft-icons';
 import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
 import { Box, Text, theme } from '@/theme';
 
@@ -42,11 +51,38 @@ const options: Partial<Record<RecordKind, string[]>> = {
   mood: ['平静', '愉快', '低落', '焦虑', '烦躁'],
 };
 
-function SheetBackground({ style }: BottomSheetBackgroundProps) {
-  return <Animated.View style={[style, styles.sheetBackground]} />;
-}
+const kindMeta: Record<
+  RecordKind,
+  { accent: string; icon: Icon; wash: string }
+> = {
+  flow: {
+    accent: theme.colors.companionBerry,
+    icon: Drop,
+    wash: theme.colors.companionBerryWash,
+  },
+  pain: {
+    accent: theme.colors.companionApricot,
+    icon: Heartbeat,
+    wash: theme.colors.companionApricotWash,
+  },
+  symptoms: {
+    accent: theme.colors.companionLavender,
+    icon: Sparkle,
+    wash: theme.colors.companionLavenderWash,
+  },
+  mood: {
+    accent: theme.colors.companionSage,
+    icon: Smiley,
+    wash: theme.colors.companionSageWash,
+  },
+  note: {
+    accent: theme.colors.companionLavender,
+    icon: NotePencil,
+    wash: theme.colors.companionLavenderWash,
+  },
+};
 
-function SoftSheetBackground({ style }: BottomSheetBackgroundProps) {
+function SheetBackground({ style }: BottomSheetBackgroundProps) {
   return <Animated.View style={[style, styles.softSheetBackground]} />;
 }
 
@@ -54,14 +90,6 @@ function SheetHandle(_: BottomSheetHandleProps) {
   return (
     <View accessible={false} style={styles.handleContainer}>
       <View style={styles.handle} />
-    </View>
-  );
-}
-
-function SoftSheetHandle(_: BottomSheetHandleProps) {
-  return (
-    <View accessible={false} style={styles.handleContainer}>
-      <View style={[styles.handle, styles.softHandle]} />
     </View>
   );
 }
@@ -85,8 +113,9 @@ export const RecordDetailSheet = forwardRef<
   const [noteDraft, setNoteDraft] = useState(draft.note);
   const snapPoints = useMemo(() => {
     if (activeKind === 'symptoms') return ['50%'];
+    if (activeKind === 'mood') return ['46%'];
     if (activeKind === 'note') return ['62%'];
-    return ['46%'];
+    return ['38%'];
   }, [activeKind]);
   const renderBackdrop = useCallback(
     (props: ComponentProps<typeof BottomSheetBackdrop>) => (
@@ -104,8 +133,9 @@ export const RecordDetailSheet = forwardRef<
   if (!activeKind) return null;
 
   const isMulti = activeKind === 'symptoms';
-  const isSoftCompanion = activeKind === 'symptoms';
   const selected = isMulti ? draft.symptoms : draft[activeKind];
+  const meta = kindMeta[activeKind];
+  const TitleIcon = meta.icon;
 
   function selectOption(option: string) {
     if (!activeKind || activeKind === 'note') return;
@@ -134,20 +164,16 @@ export const RecordDetailSheet = forwardRef<
       accessibilityRole={null}
       accessible={false}
       backdropComponent={renderBackdrop}
-      backgroundComponent={
-        isSoftCompanion ? SoftSheetBackground : SheetBackground
-      }
+      backgroundComponent={SheetBackground}
       enableDynamicSizing={false}
-      handleComponent={isSoftCompanion ? SoftSheetHandle : SheetHandle}
+      handleComponent={SheetHandle}
       index={0}
       keyboardBehavior="interactive"
       onDismiss={onDismiss}
       ref={ref}
       snapPoints={snapPoints}
     >
-      <BottomSheetView
-        style={[styles.content, isSoftCompanion && styles.softContent]}
-      >
+      <BottomSheetView style={styles.content}>
         <Box
           alignItems="center"
           flexDirection="row"
@@ -155,34 +181,25 @@ export const RecordDetailSheet = forwardRef<
           marginBottom="l"
         >
           <Box alignItems="center" flexDirection="row" gap="m">
-            {isSoftCompanion ? (
-              <Box
-                alignItems="center"
-                backgroundColor="companionCashmere"
-                height={42}
-                justifyContent="center"
-                style={styles.sheetTitleIcon}
-                width={42}
-              >
-                <Sparkle
-                  color={theme.colors.companionLavender}
-                  size={22}
-                  weight="duotone"
-                />
-              </Box>
-            ) : null}
+            <Box
+              alignItems="center"
+              height={42}
+              justifyContent="center"
+              style={[styles.sheetTitleIcon, { backgroundColor: meta.wash }]}
+              width={42}
+            >
+              <TitleIcon color={meta.accent} size={22} weight="duotone" />
+            </Box>
             <Box>
-              <Text
-                style={isSoftCompanion ? styles.softTitle : undefined}
-                variant="sectionTitle"
-              >
+              <Text style={styles.softTitle} variant="sectionTitle">
                 {labels[activeKind]}
               </Text>
-              <Text
-                style={isSoftCompanion ? styles.softCaption : undefined}
-                variant="caption"
-              >
-                {isMulti ? '可以选择多项' : '选择后立即记录'}
+              <Text style={styles.softCaption} variant="caption">
+                {activeKind === 'note'
+                  ? '最多 200 字'
+                  : isMulti
+                    ? '可以选择多项'
+                    : '选择后立即记录'}
               </Text>
             </Box>
           </Box>
@@ -190,20 +207,9 @@ export const RecordDetailSheet = forwardRef<
             accessibilityLabel="关闭"
             accessibilityRole="button"
             onPress={onClose}
-            style={[
-              styles.closeButton,
-              isSoftCompanion && styles.softCloseButton,
-            ]}
+            style={styles.closeButton}
           >
-            <X
-              color={
-                isSoftCompanion
-                  ? theme.colors.companionInk
-                  : theme.colors.textPrimary
-              }
-              size={20}
-              weight="bold"
-            />
+            <X color={theme.colors.companionInk} size={20} weight="bold" />
           </Pressable>
         </Box>
 
@@ -217,7 +223,7 @@ export const RecordDetailSheet = forwardRef<
                 onChangeText={setNoteDraft}
                 placeholder="记录今天想留下的内容"
                 placeholderTextColor={theme.colors.textMuted}
-                style={styles.noteInput}
+                style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
                 value={noteDraft}
               />
             ) : (
@@ -228,14 +234,17 @@ export const RecordDetailSheet = forwardRef<
                 onChangeText={setNoteDraft}
                 placeholder="记录今天想留下的内容"
                 placeholderTextColor={theme.colors.textMuted}
-                style={styles.noteInput}
+                style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
                 value={noteDraft}
               />
             )}
             <Pressable
               accessibilityRole="button"
               onPress={saveNote}
-              style={styles.saveButton}
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.saveButtonPressed,
+              ]}
             >
               <Text style={styles.saveText}>完成</Text>
             </Pressable>
@@ -254,44 +263,42 @@ export const RecordDetailSheet = forwardRef<
                   onPress={() => selectOption(option)}
                   style={({ pressed }) => [
                     styles.option,
-                    isSoftCompanion && styles.softOption,
-                    isSelected &&
-                      (isSoftCompanion
-                        ? styles.softOptionSelected
-                        : styles.optionSelected),
-                    pressed && isSoftCompanion && styles.softOptionPressed,
+                    { backgroundColor: meta.wash },
+                    isSelected && [
+                      styles.optionSelected,
+                      {
+                        borderColor: `${meta.accent}55`,
+                        boxShadow: `inset 0 2px 5px ${meta.accent}24, 0 1px 2px ${theme.colors.companionHighlight}`,
+                      },
+                    ],
+                    pressed && styles.optionPressed,
                   ]}
                 >
                   <Text
-                    style={
-                      isSelected
-                        ? isSoftCompanion
-                          ? styles.softOptionTextSelected
-                          : styles.optionTextSelected
-                        : isSoftCompanion
-                          ? styles.softOptionText
-                          : undefined
-                    }
+                    style={[
+                      styles.optionText,
+                      isSelected && [
+                        styles.optionTextSelected,
+                        { color: meta.accent },
+                      ],
+                    ]}
                     variant="label"
                   >
                     {option}
                   </Text>
                   {isSelected ? (
-                    isSoftCompanion ? (
-                      <View style={styles.softCheck}>
-                        <Check
-                          color={theme.colors.companionSurface}
-                          size={13}
-                          weight="bold"
-                        />
-                      </View>
-                    ) : (
+                    <View
+                      style={[
+                        styles.softCheck,
+                        { backgroundColor: meta.accent },
+                      ]}
+                    >
                       <Check
-                        color={theme.colors.periodAction}
-                        size={17}
+                        color={theme.colors.companionSurface}
+                        size={13}
                         weight="bold"
                       />
-                    )
+                    </View>
                   ) : null}
                 </Pressable>
               );
@@ -306,6 +313,12 @@ export const RecordDetailSheet = forwardRef<
 const styles = StyleSheet.create({
   closeButton: {
     alignItems: 'center',
+    backgroundColor: theme.colors.companionCashmere,
+    borderColor: theme.colors.companionHighlight,
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: 1,
+    boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -315,7 +328,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   handle: {
-    backgroundColor: theme.colors.border,
+    backgroundColor: theme.colors.companionCashmereStrong,
     borderRadius: 2,
     height: 4,
     width: 38,
@@ -326,9 +339,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   noteInput: {
-    backgroundColor: theme.colors.surfaceMuted,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
+    backgroundColor: theme.colors.companionCashmere,
+    borderCurve: 'continuous',
+    borderRadius: 15,
     borderWidth: 1,
     color: theme.colors.textPrimary,
     fontSize: 16,
@@ -338,40 +351,49 @@ const styles = StyleSheet.create({
   },
   option: {
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceMuted,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
+    borderColor: theme.colors.companionHighlight,
+    borderCurve: 'continuous',
+    borderRadius: 15,
     borderWidth: 1,
+    boxShadow: `0 5px 11px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
     flexDirection: 'row',
-    height: 52,
+    height: 56,
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     width: '48%',
   },
   optionSelected: {
-    backgroundColor: '#FFF2F6',
-    borderColor: theme.colors.periodAction,
+    borderWidth: 1.5,
+  },
+  optionPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.985 }],
+  },
+  optionText: {
+    color: theme.colors.companionInk,
   },
   optionTextSelected: {
-    color: theme.colors.periodAction,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   saveButton: {
     alignItems: 'center',
-    backgroundColor: theme.colors.periodAction,
-    borderRadius: 8,
-    height: 50,
+    backgroundColor: theme.colors.companionBerry,
+    borderColor: theme.colors.companionBerry,
+    borderCurve: 'continuous',
+    borderRadius: 15,
+    borderWidth: 1,
+    boxShadow: `0 5px 12px rgba(146, 36, 75, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
+    height: 52,
     justifyContent: 'center',
     marginTop: 16,
   },
   saveText: {
-    color: theme.colors.surface,
-    fontWeight: '600',
+    color: theme.colors.companionSurface,
+    fontWeight: '700',
   },
-  sheetBackground: {
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  saveButtonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.99 }],
   },
   sheetTitleIcon: {
     borderColor: theme.colors.companionHighlight,
@@ -385,48 +407,10 @@ const styles = StyleSheet.create({
   },
   softCheck: {
     alignItems: 'center',
-    backgroundColor: theme.colors.companionLavender,
     borderRadius: 10,
     height: 20,
     justifyContent: 'center',
     width: 20,
-  },
-  softCloseButton: {
-    backgroundColor: theme.colors.companionCashmere,
-    borderColor: theme.colors.companionHighlight,
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    borderWidth: 1,
-    boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
-  },
-  softContent: {
-    paddingHorizontal: 20,
-  },
-  softHandle: {
-    backgroundColor: theme.colors.companionCashmereStrong,
-  },
-  softOption: {
-    backgroundColor: theme.colors.companionCashmere,
-    borderColor: theme.colors.companionHighlight,
-    borderCurve: 'continuous',
-    borderRadius: 15,
-    boxShadow: `0 5px 11px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
-    height: 56,
-  },
-  softOptionPressed: {
-    opacity: 0.78,
-  },
-  softOptionSelected: {
-    backgroundColor: '#F0E8F5',
-    borderColor: '#D8CBE4',
-    boxShadow: `inset 0 2px 5px rgba(92, 71, 114, 0.16), 0 1px 2px ${theme.colors.companionHighlight}`,
-  },
-  softOptionText: {
-    color: theme.colors.companionInk,
-  },
-  softOptionTextSelected: {
-    color: theme.colors.companionLavender,
-    fontWeight: '700',
   },
   softSheetBackground: {
     backgroundColor: theme.colors.companionSurface,

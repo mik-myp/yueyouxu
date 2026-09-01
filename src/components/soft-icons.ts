@@ -1,3 +1,6 @@
+export { ArrowRightIcon as ArrowRight } from 'phosphor-react-native/src/icons/ArrowRight';
+export { CalendarHeartIcon as CalendarHeart } from 'phosphor-react-native/src/icons/CalendarHeart';
+export { CalendarPlusIcon as CalendarPlus } from 'phosphor-react-native/src/icons/CalendarPlus';
 export { CalendarDotsIcon as CalendarDots } from 'phosphor-react-native/src/icons/CalendarDots';
 export { CaretLeftIcon as CaretLeft } from 'phosphor-react-native/src/icons/CaretLeft';
 export { CaretRightIcon as CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
@@ -5,10 +8,18 @@ export { ChartLineUpIcon as ChartLineUp } from 'phosphor-react-native/src/icons/
 export { CheckCircleIcon as CheckCircle } from 'phosphor-react-native/src/icons/CheckCircle';
 export { CheckIcon as Check } from 'phosphor-react-native/src/icons/Check';
 export { DropIcon as Drop } from 'phosphor-react-native/src/icons/Drop';
+export { GearSixIcon as GearSix } from 'phosphor-react-native/src/icons/GearSix';
+export { HeartIcon as Heart } from 'phosphor-react-native/src/icons/Heart';
 export { HeartbeatIcon as Heartbeat } from 'phosphor-react-native/src/icons/Heartbeat';
+export { InfoIcon as Info } from 'phosphor-react-native/src/icons/Info';
+export { LockSimpleIcon as LockSimple } from 'phosphor-react-native/src/icons/LockSimple';
+export { MinusIcon as Minus } from 'phosphor-react-native/src/icons/Minus';
 export { MoonStarsIcon as MoonStars } from 'phosphor-react-native/src/icons/MoonStars';
 export { NotePencilIcon as NotePencil } from 'phosphor-react-native/src/icons/NotePencil';
 export { SmileyIcon as Smiley } from 'phosphor-react-native/src/icons/Smiley';
 export { SparkleIcon as Sparkle } from 'phosphor-react-native/src/icons/Sparkle';
+export { ShieldCheckIcon as ShieldCheck } from 'phosphor-react-native/src/icons/ShieldCheck';
+export { TrashSimpleIcon as TrashSimple } from 'phosphor-react-native/src/icons/TrashSimple';
+export { WaveSineIcon as WaveSine } from 'phosphor-react-native/src/icons/WaveSine';
 export { XIcon as X } from 'phosphor-react-native/src/icons/X';
 export type { Icon } from 'phosphor-react-native';
