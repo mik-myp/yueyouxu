@@ -73,13 +73,8 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
     isToday && '今天',
     selected && '已选择',
   ].filter(Boolean);
-  const marker = recorded
-    ? {
-        backgroundColor: theme.colors.companionLavenderWash,
-        color: theme.colors.companionLavender,
-        icon: NotePencil,
-      }
-    : actual && start
+  const marker =
+    actual && start
       ? {
           backgroundColor: theme.colors.companionSurface,
           color: theme.colors.companionBerry,
@@ -87,11 +82,17 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
         }
       : predicted && start
         ? {
-            backgroundColor: theme.colors.companionBerryWash,
+            backgroundColor: theme.colors.companionSurface,
             color: theme.colors.companionBerry,
             icon: Sparkle,
           }
-        : null;
+        : recorded
+          ? {
+              backgroundColor: theme.colors.companionLavenderWash,
+              color: theme.colors.companionLavender,
+              icon: NotePencil,
+            }
+          : null;
 
   return (
     <Pressable
@@ -113,6 +114,8 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
             start && styles.bandStart,
             end && styles.bandEnd,
             actual ? styles.actualBand : styles.predictedBand,
+            predicted && start && styles.predictedBandStart,
+            predicted && end && styles.predictedBandEnd,
           ]}
         />
       ) : null}
@@ -280,8 +283,8 @@ export function MonthCalendar({
       </View>
       <View style={styles.legend}>
         <LegendItem
-          backgroundColor={theme.colors.companionBerryWash}
-          color={theme.colors.companionBerry}
+          backgroundColor={theme.colors.companionBerry}
+          color={theme.colors.companionSurface}
           icon={Drop}
           label="实际经期"
         />
@@ -419,6 +422,14 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.companionBerryOutline,
     borderTopWidth: 2,
   },
+  predictedBandEnd: {
+    borderRightColor: theme.colors.companionBerryOutline,
+    borderRightWidth: 2,
+  },
+  predictedBandStart: {
+    borderLeftColor: theme.colors.companionBerryOutline,
+    borderLeftWidth: 2,
+  },
   legend: {
     borderTopColor: theme.colors.companionCashmereStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -463,11 +474,11 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.companionCanvas,
     borderRadius: 7,
     borderWidth: 1,
-    bottom: 0,
     height: 14,
     justifyContent: 'center',
     position: 'absolute',
-    right: 3,
+    right: 4,
+    top: 4,
     width: 14,
   },
   today: {

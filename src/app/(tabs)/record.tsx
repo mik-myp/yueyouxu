@@ -59,16 +59,7 @@ export default function RecordScreen() {
         style={styles.scroll}
         tabIndex={0}
       >
-        <Box paddingHorizontal="page" paddingTop="l">
-          <Text style={styles.title} variant="title">
-            记录
-          </Text>
-          <Text style={styles.subtitle} variant="caption">
-            选择日期，查看或补充当天状态
-          </Text>
-        </Box>
-
-        <Box marginTop="l">
+        <Box paddingTop="m">
           <MonthCalendar
             onSelectDate={selectDate}
             selectedDate={selectedDate}
@@ -217,12 +208,5 @@ const styles = StyleSheet.create({
   },
   scroll: {
     backgroundColor: theme.colors.companionCanvas,
-  },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-  },
-  title: {
-    color: theme.colors.companionInk,
   },
 });

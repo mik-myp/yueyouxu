@@ -50,37 +50,15 @@ export default function TodayScreen() {
         showsVerticalScrollIndicator={false}
         tabIndex={0}
       >
-        <Box
-          alignItems="center"
-          flexDirection="row"
-          justifyContent="space-between"
-          paddingHorizontal="page"
-          paddingTop="l"
-        >
-          <Box flex={1}>
-            <Box alignItems="center" flexDirection="row" gap="s">
-              <Text style={styles.yearMonth}>2026年9月</Text>
-              <Box style={styles.todayPill}>
-                <Text style={styles.todayText}>今天</Text>
-              </Box>
-            </Box>
-            <Box
-              alignItems="baseline"
-              flexDirection="row"
-              flexWrap="wrap"
-              gap="m"
-            >
-              <Text style={styles.dayTitle}>1日</Text>
-              <Text style={styles.weekdayTitle}>星期二</Text>
-            </Box>
-          </Box>
+        <Box paddingHorizontal="page" paddingTop="m">
+          <Text style={styles.dateLine}>2026年9月1日 · 星期二</Text>
         </Box>
 
         <Box marginTop="s" paddingHorizontal="s">
           <CycleArc />
         </Box>
 
-        <Box gap="m" paddingHorizontal="page">
+        <Box gap="m" marginTop="l" paddingHorizontal="page">
           <PrimaryButton
             icon={periodActive ? Heart : CalendarPlus}
             label={periodActive ? '月经结束' : '月经来了'}
@@ -224,25 +202,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 44,
   },
-  dayTitle: {
+  dateLine: {
     color: theme.colors.companionInk,
-    fontSize: 32,
+    fontSize: 18,
     fontVariant: ['tabular-nums'],
-    fontWeight: '700',
-    lineHeight: 40,
-  },
-  todayPill: {
-    backgroundColor: theme.colors.companionBerryWash,
-    borderCurve: 'continuous',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  todayText: {
-    color: theme.colors.companionBerry,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+    fontWeight: '600',
+    lineHeight: 26,
   },
   pressed: {
     opacity: 0.6,
@@ -262,19 +227,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     borderRadius: 14,
     boxShadow: `0 6px 18px rgba(58, 46, 52, 0.2)`,
-  },
-  weekdayTitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
-  },
-  yearMonth: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '600',
-    lineHeight: 20,
   },
   undoButton: {
     minHeight: 40,

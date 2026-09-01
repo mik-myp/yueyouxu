@@ -3,7 +3,9 @@ import { ScrollView, StyleSheet } from 'react-native';
 import {
   CalendarHeart,
   Drop,
+  Heartbeat,
   Info,
+  Sparkle,
   type Icon,
   WaveSine,
 } from '@/components/soft-icons';
@@ -22,15 +24,6 @@ export default function TrendsScreen() {
         tabIndex={0}
       >
         <Box paddingHorizontal="page" paddingTop="l">
-          <Text style={styles.title} variant="title">
-            趋势
-          </Text>
-          <Text style={styles.subtitle} variant="caption">
-            根据最近 4 个完整周期整理
-          </Text>
-        </Box>
-
-        <Box marginTop="xl" paddingHorizontal="page">
           <SectionHeading action="近 4 个周期" title="周期长度" />
           <Box alignItems="baseline" flexDirection="row" gap="s" marginTop="m">
             <Text style={styles.heroNumber} variant="heroNumber">
@@ -60,6 +53,40 @@ export default function TrendsScreen() {
           borderTopColor="companionCashmereStrong"
           borderTopWidth={StyleSheet.hairlineWidth}
           marginTop="xxl"
+          paddingBottom="l"
+          paddingHorizontal="page"
+          paddingTop="m"
+        >
+          <SectionHeading action="3 / 5 天" title="本周期记录覆盖" />
+          <Box flexDirection="row" gap="xs" marginTop="m">
+            {[true, true, true, false, false].map((recorded, index) => (
+              <Box
+                backgroundColor={
+                  recorded ? 'companionBerry' : 'companionCashmereStrong'
+                }
+                borderRadius="s"
+                flex={1}
+                height={8}
+                key={index}
+              />
+            ))}
+          </Box>
+          <Box flexDirection="row" marginTop="m">
+            <CompactMetric label="已记录" value="3 天" />
+            <Box style={styles.metricDivider} />
+            <CompactMetric label="经期覆盖" value="60%" />
+            <Box style={styles.metricDivider} />
+            <CompactMetric label="待补充" value="2 天" />
+          </Box>
+        </Box>
+
+        <Box
+          backgroundColor="companionSurface"
+          borderBottomColor="companionCashmereStrong"
+          borderBottomWidth={StyleSheet.hairlineWidth}
+          borderTopColor="companionCashmereStrong"
+          borderTopWidth={StyleSheet.hairlineWidth}
+          marginTop="xl"
           paddingHorizontal="page"
           paddingBottom="l"
           paddingTop="m"
@@ -99,6 +126,33 @@ export default function TrendsScreen() {
                 width="52%"
               />
             </Box>
+          </Box>
+        </Box>
+
+        <Box marginTop="xxl">
+          <Box paddingHorizontal="page">
+            <SectionHeading action="基于现有记录" title="记录分析" />
+          </Box>
+          <Box style={[styles.analysisGroup, styles.sectionSpacing]}>
+            <AnalysisRow
+              accent={theme.colors.companionLavender}
+              description="最近 4 个周期相差 2 天，整体较稳定"
+              icon={WaveSine}
+              label="周期稳定性"
+            />
+            <AnalysisRow
+              accent={theme.colors.companionBerry}
+              description="4 次中有 3 次持续 5 天"
+              icon={Drop}
+              label="经期长度"
+            />
+            <AnalysisRow
+              accent={theme.colors.companionApricot}
+              description="当前以轻微痛感、腰酸和乏力为主"
+              icon={Heartbeat}
+              isLast
+              label="记录特点"
+            />
           </Box>
         </Box>
 
@@ -188,9 +242,72 @@ function MetricIcon({ accent, icon: Icon }: MetricIconProps) {
   );
 }
 
+function CompactMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <Box alignItems="center" flex={1}>
+      <Text style={styles.compactMetricValue}>{value}</Text>
+      <Text variant="caption">{label}</Text>
+    </Box>
+  );
+}
+
+type AnalysisRowProps = {
+  accent: string;
+  description: string;
+  icon: Icon;
+  isLast?: boolean;
+  label: string;
+};
+
+function AnalysisRow({
+  accent,
+  description,
+  icon: Icon,
+  isLast,
+  label,
+}: AnalysisRowProps) {
+  return (
+    <Box
+      alignItems="center"
+      borderBottomColor="companionCashmereStrong"
+      borderBottomWidth={isLast ? 0 : StyleSheet.hairlineWidth}
+      flexDirection="row"
+      minHeight={76}
+      paddingHorizontal="page"
+    >
+      <MetricIcon accent={accent} icon={Icon} />
+      <Box flex={1} marginLeft="m">
+        <Text variant="label">{label}</Text>
+        <Text style={styles.analysisDescription}>{description}</Text>
+      </Box>
+      <Sparkle color={accent} size={15} weight="duotone" />
+    </Box>
+  );
+}
+
 const styles = StyleSheet.create({
+  analysisDescription: {
+    color: theme.colors.companionInk,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 2,
+  },
+  analysisGroup: {
+    backgroundColor: theme.colors.companionSurface,
+    borderBottomColor: theme.colors.companionCashmereStrong,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.companionCashmereStrong,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   content: {
     paddingBottom: 48,
+  },
+  compactMetricValue: {
+    color: theme.colors.companionInk,
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '700',
+    lineHeight: 25,
   },
   chartFrame: {
     marginTop: 2,
@@ -230,11 +347,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
   },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  title: {
-    color: theme.colors.companionInk,
+  sectionSpacing: {
+    marginTop: 16,
   },
 });
