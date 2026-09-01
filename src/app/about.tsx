@@ -1,36 +1,15 @@
-import { useRouter } from 'expo-router';
-import { CalendarHeart, CaretLeft } from '@/components/soft-icons';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { CalendarHeart } from '@/components/soft-icons';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { Page } from '@/components/page';
+import { SettingsDetailHeader } from '@/components/settings-detail-header';
 import { Box, Text, theme } from '@/theme';
 
 export default function AboutScreen() {
-  const router = useRouter();
-
   return (
     <Page>
       <ScrollView contentContainerStyle={styles.content} tabIndex={0}>
-        <Box alignItems="center" flexDirection="row" paddingHorizontal="page">
-          <Pressable
-            accessibilityLabel="返回设置"
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <CaretLeft
-              color={theme.colors.companionInk}
-              size={20}
-              weight="bold"
-            />
-          </Pressable>
-          <Text marginLeft="m" variant="sectionTitle">
-            关于月有序
-          </Text>
-        </Box>
+        <SettingsDetailHeader title="关于月有序" />
 
         <Box alignItems="center" marginTop="xxl" paddingHorizontal="page">
           <Box
@@ -72,23 +51,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     boxShadow: `0 5px 14px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
   },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.companionCashmere,
-    borderColor: theme.colors.companionHighlight,
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   content: {
     paddingBottom: 48,
     paddingTop: 16,
-  },
-  pressed: {
-    opacity: 0.65,
   },
   versionRow: {
     alignItems: 'center',

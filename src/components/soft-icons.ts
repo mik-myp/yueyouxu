@@ -7,6 +7,9 @@ export { CaretRightIcon as CaretRight } from 'phosphor-react-native/src/icons/Ca
 export { ChartLineUpIcon as ChartLineUp } from 'phosphor-react-native/src/icons/ChartLineUp';
 export { CheckCircleIcon as CheckCircle } from 'phosphor-react-native/src/icons/CheckCircle';
 export { CheckIcon as Check } from 'phosphor-react-native/src/icons/Check';
+export { CloudSlashIcon as CloudSlash } from 'phosphor-react-native/src/icons/CloudSlash';
+export { DatabaseIcon as Database } from 'phosphor-react-native/src/icons/Database';
+export { DeviceMobileIcon as DeviceMobile } from 'phosphor-react-native/src/icons/DeviceMobile';
 export { DropIcon as Drop } from 'phosphor-react-native/src/icons/Drop';
 export { GearSixIcon as GearSix } from 'phosphor-react-native/src/icons/GearSix';
 export { HeartIcon as Heart } from 'phosphor-react-native/src/icons/Heart';
@@ -16,9 +19,11 @@ export { LockSimpleIcon as LockSimple } from 'phosphor-react-native/src/icons/Lo
 export { MinusIcon as Minus } from 'phosphor-react-native/src/icons/Minus';
 export { MoonStarsIcon as MoonStars } from 'phosphor-react-native/src/icons/MoonStars';
 export { NotePencilIcon as NotePencil } from 'phosphor-react-native/src/icons/NotePencil';
+export { PlusIcon as Plus } from 'phosphor-react-native/src/icons/Plus';
 export { SmileyIcon as Smiley } from 'phosphor-react-native/src/icons/Smiley';
 export { SparkleIcon as Sparkle } from 'phosphor-react-native/src/icons/Sparkle';
 export { ShieldCheckIcon as ShieldCheck } from 'phosphor-react-native/src/icons/ShieldCheck';
+export { SlidersHorizontalIcon as SlidersHorizontal } from 'phosphor-react-native/src/icons/SlidersHorizontal';
 export { TrashSimpleIcon as TrashSimple } from 'phosphor-react-native/src/icons/TrashSimple';
 export { WaveSineIcon as WaveSine } from 'phosphor-react-native/src/icons/WaveSine';
 export { XIcon as X } from 'phosphor-react-native/src/icons/X';

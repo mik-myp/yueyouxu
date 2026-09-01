@@ -1,5 +1,11 @@
 import { useRouter } from 'expo-router';
-import { CaretRight, Info, type Icon } from '@/components/soft-icons';
+import {
+  CaretRight,
+  Info,
+  ShieldCheck,
+  SlidersHorizontal,
+  type Icon,
+} from '@/components/soft-icons';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Page } from '@/components/page';
@@ -11,43 +17,73 @@ export default function SettingsScreen() {
   return (
     <Page>
       <ScrollView contentContainerStyle={styles.content} tabIndex={0}>
-        <Box paddingHorizontal="page">
-          <Text marginBottom="s" variant="caption">
-            应用信息
-          </Text>
-        </Box>
-        <Box style={styles.settingsGroup}>
+        <SettingsSection label="周期默认值">
           <SettingRow
             accent={theme.colors.companionBerry}
+            description="周期 30 天 · 经期 5 天"
+            icon={SlidersHorizontal}
+            label="周期设置"
+            onPress={() => router.push('/cycle-settings')}
+          />
+        </SettingsSection>
+
+        <SettingsSection label="隐私与数据">
+          <SettingRow
+            accent={theme.colors.companionSage}
+            description="本地优先 · AI 未启用"
+            icon={ShieldCheck}
+            label="数据管理"
+            onPress={() => router.push('/privacy-data')}
+          />
+        </SettingsSection>
+
+        <SettingsSection label="应用信息">
+          <SettingRow
+            accent={theme.colors.companionLavender}
+            description="版本与应用说明"
             icon={Info}
             label="关于月有序"
             onPress={() => router.push('/about')}
-            value="v0.1.0"
           />
-        </Box>
-
-        <Text marginTop="xl" textAlign="center" variant="caption">
-          月有序 · v0.1.0
-        </Text>
+        </SettingsSection>
       </ScrollView>
     </Page>
   );
 }
 
+function SettingsSection({
+  children,
+  label,
+}: {
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Box marginBottom="xl">
+      <Box paddingHorizontal="page">
+        <Text marginBottom="s" variant="caption">
+          {label}
+        </Text>
+      </Box>
+      <Box style={styles.settingsGroup}>{children}</Box>
+    </Box>
+  );
+}
+
 type SettingRowProps = {
   accent: string;
+  description: string;
   icon: Icon;
   label: string;
   onPress: () => void;
-  value: string;
 };
 
 function SettingRow({
   accent,
+  description,
   icon: Icon,
   label,
   onPress,
-  value,
 }: SettingRowProps) {
   return (
     <Pressable
@@ -57,26 +93,27 @@ function SettingRow({
     >
       <Box
         alignItems="center"
-        height={38}
+        height={40}
         justifyContent="center"
         style={[styles.settingIcon, { backgroundColor: `${accent}14` }]}
-        width={38}
+        width={40}
       >
-        <Icon color={accent} size={20} weight="duotone" />
+        <Icon color={accent} size={21} weight="duotone" />
       </Box>
-      <Text marginLeft="m" variant="body">
-        {label}
-      </Text>
-      <Box flex={1} />
-      <Text variant="label">{value}</Text>
-      <CaretRight color={theme.colors.textMuted} size={17} weight="bold" />
+      <Box flex={1} marginLeft="m">
+        <Text variant="body">{label}</Text>
+        <Text marginTop="xs" variant="caption">
+          {description}
+        </Text>
+      </Box>
+      <CaretRight color={theme.colors.textMuted} size={18} weight="bold" />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 48,
+    paddingBottom: 24,
     paddingTop: 24,
   },
   pressed: {
@@ -85,7 +122,7 @@ const styles = StyleSheet.create({
   settingRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    minHeight: 68,
+    minHeight: 80,
     paddingHorizontal: 20,
   },
   settingIcon: {
