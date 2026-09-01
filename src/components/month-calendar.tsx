@@ -1,7 +1,7 @@
 import { Calendar, type DateData } from 'react-native-calendars';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { CaretLeft, CaretRight } from '@/components/soft-icons';
 import {
   actualPeriodRange,
   predictedPeriodRange,
@@ -55,8 +55,12 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
     <Pressable
       accessibilityLabel={`${date.month}月${date.day}日`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       onPress={onPress}
-      style={styles.dayCell}
+      style={({ pressed }) => [
+        styles.dayCell,
+        pressed && styles.dayCellPressed,
+      ]}
     >
       {actual || predicted ? (
         <View
@@ -72,7 +76,8 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
         style={[
           styles.dayNumber,
           key === prototypeToday && !actual && styles.today,
-          selected && styles.selected,
+          selected && !actual && styles.selected,
+          selected && actual && styles.selectedActual,
         ]}
       >
         <Text
@@ -102,7 +107,11 @@ function CalendarHeader({ addMonth, month }: CalendarHeaderProps) {
           onPress={() => addMonth?.(-1)}
           style={styles.monthButton}
         >
-          <ChevronLeft color={theme.colors.textPrimary} size={20} />
+          <CaretLeft
+            color={theme.colors.companionInk}
+            size={19}
+            weight="bold"
+          />
         </Pressable>
         <Text variant="sectionTitle">
           {month?.getFullYear()}年{(month?.getMonth() ?? 0) + 1}月
@@ -113,7 +122,11 @@ function CalendarHeader({ addMonth, month }: CalendarHeaderProps) {
           onPress={() => addMonth?.(1)}
           style={styles.monthButton}
         >
-          <ChevronRight color={theme.colors.textPrimary} size={20} />
+          <CaretRight
+            color={theme.colors.companionInk}
+            size={19}
+            weight="bold"
+          />
         </Pressable>
       </View>
       <View style={styles.weekHeader}>
@@ -147,8 +160,8 @@ export function MonthCalendar({
       hideExtraDays={false}
       style={styles.calendar}
       theme={{
-        arrowColor: theme.colors.textPrimary,
-        calendarBackground: theme.colors.background,
+        arrowColor: theme.colors.companionInk,
+        calendarBackground: theme.colors.companionCanvas,
         textDayHeaderFontSize: 12,
         textSectionTitleColor: theme.colors.textMuted,
       }}
@@ -158,7 +171,7 @@ export function MonthCalendar({
 
 const styles = StyleSheet.create({
   actualBand: {
-    backgroundColor: theme.colors.periodActual,
+    backgroundColor: theme.colors.companionBerry,
   },
   actualText: {
     color: theme.colors.surface,
@@ -167,25 +180,28 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   band: {
-    bottom: 4,
+    bottom: 5,
     left: 0,
     position: 'absolute',
     right: 0,
-    top: 4,
+    top: 5,
   },
   bandEnd: {
-    borderBottomRightRadius: 8,
-    borderTopRightRadius: 8,
-    right: 4,
+    borderBottomRightRadius: 12,
+    borderCurve: 'continuous',
+    borderTopRightRadius: 12,
+    right: 5,
   },
   bandStart: {
-    borderBottomLeftRadius: 8,
-    borderTopLeftRadius: 8,
-    left: 4,
+    borderBottomLeftRadius: 12,
+    borderCurve: 'continuous',
+    borderTopLeftRadius: 12,
+    left: 5,
   },
   calendar: {
-    backgroundColor: theme.colors.background,
-    paddingBottom: 4,
+    backgroundColor: theme.colors.companionCanvas,
+    paddingBottom: 8,
+    paddingHorizontal: 6,
   },
   dayCell: {
     alignItems: 'center',
@@ -194,12 +210,16 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
+  dayCellPressed: {
+    opacity: 0.7,
+  },
   dayNumber: {
     alignItems: 'center',
-    borderRadius: 16,
-    height: 32,
+    borderCurve: 'continuous',
+    borderRadius: 17,
+    height: 34,
     justifyContent: 'center',
-    width: 32,
+    width: 34,
   },
   dayText: {
     color: theme.colors.textPrimary,
@@ -212,6 +232,12 @@ const styles = StyleSheet.create({
   },
   monthButton: {
     alignItems: 'center',
+    backgroundColor: theme.colors.companionCashmere,
+    borderColor: theme.colors.companionHighlight,
+    borderCurve: 'continuous',
+    borderRadius: 13,
+    borderWidth: 1,
+    boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -220,29 +246,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   predictedBand: {
-    backgroundColor: '#FFF7F9',
-    borderBottomColor: theme.colors.periodPredicted,
+    backgroundColor: theme.colors.companionSurface,
+    borderBottomColor: theme.colors.companionBerrySoft,
     borderBottomWidth: 2,
-    borderTopColor: theme.colors.periodPredicted,
+    borderTopColor: theme.colors.companionBerrySoft,
     borderTopWidth: 2,
   },
   recordDot: {
-    backgroundColor: theme.colors.symptom,
-    borderRadius: 2,
-    bottom: 1,
-    height: 4,
+    backgroundColor: theme.colors.companionLavender,
+    borderColor: theme.colors.companionCanvas,
+    borderRadius: 3,
+    borderWidth: 1,
+    bottom: 0,
+    height: 6,
     position: 'absolute',
-    width: 4,
+    width: 6,
   },
   selected: {
-    borderColor: theme.colors.textPrimary,
+    backgroundColor: theme.colors.companionCashmere,
+    borderColor: theme.colors.companionInk,
     borderWidth: 1.5,
+    boxShadow: `0 2px 5px ${theme.colors.companionShadow}`,
+  },
+  selectedActual: {
+    borderColor: theme.colors.companionSurface,
+    borderWidth: 2,
   },
   today: {
-    borderColor: theme.colors.periodActual,
+    borderColor: theme.colors.companionBerry,
     borderWidth: 1.5,
   },
   weekDay: {
@@ -254,6 +289,7 @@ const styles = StyleSheet.create({
   },
   weekHeader: {
     flexDirection: 'row',
-    paddingVertical: 4,
+    paddingBottom: 6,
+    paddingTop: 7,
   },
 });
