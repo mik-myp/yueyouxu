@@ -25,6 +25,12 @@
 - v0.1 开发阶段使用 Expo Go；只有出现不受支持的原生模块时才切换 Development Build。
 - SQL 层采用 Drizzle ORM，并通过 Repository 隔离页面、领域层和具体数据库操作。
 - iOS 和 Android 是 v0.1 产品目标；SQLite Web 仍为 alpha，Web 仅作为开发辅助平台。
+- 批次 1 已完成 `今天`、`记录`、`趋势`、`设置` 页面和三标签导航的可调整 UI 原型。
+- 批次 1 的实际经期使用连续实色带，预测经期使用描边色带；月份头和星期标题使用中文。
+- 记录详情使用底部面板；流量、痛感和心情单选后关闭，症状支持面板内多选，备注完成后保存。
+- 批次 1 所有数据与交互状态仅存在内存中，刷新后重置；页面间尚未共享记录状态。
+- UI 主色仍使用柔和经期粉色，辅助文字和操作色已调整到 WCAG AA 对比度。
+- Web 端备注输入使用标准 React Native `TextInput`，避免 Gorhom Bottom Sheet 与 React Native Web 0.86 的焦点 API 兼容问题；移动端继续使用 `BottomSheetTextInput`。
 
 ### 设计方向
 
