@@ -59,7 +59,7 @@ export default function RecordScreen() {
         style={styles.scroll}
         tabIndex={0}
       >
-        <Box paddingHorizontal="page" paddingTop="m">
+        <Box paddingHorizontal="page" paddingTop="l">
           <Text style={styles.title} variant="title">
             记录
           </Text>
@@ -68,7 +68,7 @@ export default function RecordScreen() {
           </Text>
         </Box>
 
-        <Box marginTop="m">
+        <Box marginTop="l">
           <MonthCalendar
             onSelectDate={selectDate}
             selectedDate={selectedDate}
@@ -173,7 +173,6 @@ export default function RecordScreen() {
         onChange={setDraft}
         onClose={closeSheet}
         onDismiss={() => setActiveKind(null)}
-        onSingleSelect={closeSheet}
         ref={sheetRef}
       />
     </Page>
@@ -182,15 +181,15 @@ export default function RecordScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 32,
+    paddingBottom: 44,
   },
   dateCaption: {
     color: theme.colors.textSecondary,
     marginTop: 1,
   },
   dateSummary: {
-    minHeight: 86,
-    paddingVertical: 16,
+    minHeight: 94,
+    paddingVertical: 20,
   },
   dateTitle: {
     color: theme.colors.companionInk,
@@ -221,7 +220,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: theme.colors.textSecondary,
-    marginTop: 1,
+    marginTop: 4,
   },
   title: {
     color: theme.colors.companionInk,

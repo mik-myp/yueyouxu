@@ -30,7 +30,6 @@ import {
   NotePencil,
   Smiley,
   Sparkle,
-  X,
   type Icon,
 } from '@/components/soft-icons';
 import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
@@ -100,17 +99,16 @@ type RecordDetailSheetProps = {
   onChange: (draft: DailyRecordDraft) => void;
   onClose: () => void;
   onDismiss: () => void;
-  onSingleSelect: () => void;
 };
 
 export const RecordDetailSheet = forwardRef<
   BottomSheetModal,
   RecordDetailSheetProps
 >(function RecordDetailSheet(
-  { activeKind, draft, onChange, onClose, onDismiss, onSingleSelect },
+  { activeKind, draft, onChange, onClose, onDismiss },
   ref,
 ) {
-  const [noteDraft, setNoteDraft] = useState(draft.note);
+  const [pendingDraft, setPendingDraft] = useState(draft);
   const snapPoints = useMemo(() => {
     if (activeKind === 'symptoms') return ['50%'];
     if (activeKind === 'mood') return ['46%'];
@@ -133,7 +131,7 @@ export const RecordDetailSheet = forwardRef<
   if (!activeKind) return null;
 
   const isMulti = activeKind === 'symptoms';
-  const selected = isMulti ? draft.symptoms : draft[activeKind];
+  const selected = isMulti ? pendingDraft.symptoms : pendingDraft[activeKind];
   const meta = kindMeta[activeKind];
   const TitleIcon = meta.icon;
 
@@ -141,21 +139,25 @@ export const RecordDetailSheet = forwardRef<
     if (!activeKind || activeKind === 'note') return;
 
     if (activeKind === 'symptoms') {
-      const next = draft.symptoms.includes(option)
-        ? draft.symptoms.filter((item) => item !== option)
-        : [...draft.symptoms, option];
-      onChange({ ...draft, symptoms: next });
+      const next = pendingDraft.symptoms.includes(option)
+        ? pendingDraft.symptoms.filter((item) => item !== option)
+        : [...pendingDraft.symptoms, option];
+      setPendingDraft({ ...pendingDraft, symptoms: next });
       return;
     }
 
-    onChange({ ...draft, [activeKind]: option });
-    onSingleSelect();
+    setPendingDraft({ ...pendingDraft, [activeKind]: option });
   }
 
-  function saveNote() {
+  function confirmChanges() {
     Keyboard.dismiss();
-    onChange({ ...draft, note: noteDraft.trim() });
-    requestAnimationFrame(onSingleSelect);
+    onChange({ ...pendingDraft, note: pendingDraft.note.trim() });
+    requestAnimationFrame(onClose);
+  }
+
+  function cancelChanges() {
+    Keyboard.dismiss();
+    onClose();
   }
 
   return (
@@ -178,79 +180,83 @@ export const RecordDetailSheet = forwardRef<
           alignItems="center"
           flexDirection="row"
           justifyContent="space-between"
-          marginBottom="l"
+          style={styles.actionBar}
         >
-          <Box alignItems="center" flexDirection="row" gap="m">
+          <Pressable
+            accessibilityRole="button"
+            onPress={cancelChanges}
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && styles.actionPressed,
+            ]}
+          >
+            <Text style={styles.cancelText}>取消</Text>
+          </Pressable>
+          <Box alignItems="center" flexDirection="row" gap="s">
             <Box
               alignItems="center"
-              height={42}
+              height={34}
               justifyContent="center"
               style={[styles.sheetTitleIcon, { backgroundColor: meta.wash }]}
-              width={42}
+              width={34}
             >
-              <TitleIcon color={meta.accent} size={22} weight="duotone" />
+              <TitleIcon color={meta.accent} size={19} weight="duotone" />
             </Box>
-            <Box>
-              <Text style={styles.softTitle} variant="sectionTitle">
-                {labels[activeKind]}
-              </Text>
-              <Text style={styles.softCaption} variant="caption">
-                {activeKind === 'note'
-                  ? '最多 200 字'
-                  : isMulti
-                    ? '可以选择多项'
-                    : '选择后立即记录'}
-              </Text>
-            </Box>
+            <Text style={styles.softTitle} variant="sectionTitle">
+              {labels[activeKind]}
+            </Text>
           </Box>
           <Pressable
-            accessibilityLabel="关闭"
             accessibilityRole="button"
-            onPress={onClose}
-            style={styles.closeButton}
+            onPress={confirmChanges}
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && styles.actionPressed,
+            ]}
           >
-            <X color={theme.colors.companionInk} size={20} weight="bold" />
+            <Text style={styles.confirmText}>确认</Text>
           </Pressable>
         </Box>
+        <Text style={styles.softCaption} variant="caption">
+          {activeKind === 'note'
+            ? '最多 200 字，确认后保存'
+            : isMulti
+              ? '可以选择多项，确认后保存'
+              : '选择一项，确认后保存'}
+        </Text>
 
         {activeKind === 'note' ? (
-          <>
+          <Box marginTop="l">
             {Platform.OS === 'web' ? (
               <TextInput
                 accessibilityLabel="备注"
                 maxLength={200}
                 multiline
-                onChangeText={setNoteDraft}
+                onChangeText={(note) =>
+                  setPendingDraft({ ...pendingDraft, note })
+                }
                 placeholder="记录今天想留下的内容"
                 placeholderTextColor={theme.colors.textMuted}
                 style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
-                value={noteDraft}
+                value={pendingDraft.note}
               />
             ) : (
               <BottomSheetTextInput
                 accessibilityLabel="备注"
                 maxLength={200}
                 multiline
-                onChangeText={setNoteDraft}
+                onChangeText={(note) =>
+                  setPendingDraft({ ...pendingDraft, note })
+                }
                 placeholder="记录今天想留下的内容"
                 placeholderTextColor={theme.colors.textMuted}
                 style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
-                value={noteDraft}
+                value={pendingDraft.note}
               />
             )}
-            <Pressable
-              accessibilityRole="button"
-              onPress={saveNote}
-              style={({ pressed }) => [
-                styles.saveButton,
-                pressed && styles.saveButtonPressed,
-              ]}
-            >
-              <Text style={styles.saveText}>完成</Text>
-            </Pressable>
-          </>
+          </Box>
         ) : (
-          <Box flexDirection="row" flexWrap="wrap" gap="s">
+          <Box flexDirection="row" flexWrap="wrap" gap="s" marginTop="l">
             {options[activeKind]?.map((option) => {
               const isSelected = Array.isArray(selected)
                 ? selected.includes(option)
@@ -311,17 +317,31 @@ export const RecordDetailSheet = forwardRef<
 });
 
 const styles = StyleSheet.create({
-  closeButton: {
+  actionBar: {
     alignItems: 'center',
-    backgroundColor: theme.colors.companionCashmere,
-    borderColor: theme.colors.companionHighlight,
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    borderWidth: 1,
-    boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
+    height: 44,
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    alignItems: 'center',
     height: 44,
     justifyContent: 'center',
-    width: 44,
+    minWidth: 56,
+  },
+  actionPressed: {
+    opacity: 0.58,
+  },
+  cancelText: {
+    color: theme.colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  confirmText: {
+    color: theme.colors.companionBerry,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
   },
   content: {
     paddingBottom: 32,
@@ -345,7 +365,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: theme.colors.textPrimary,
     fontSize: 16,
-    minHeight: 128,
+    minHeight: 180,
     padding: 16,
     textAlignVertical: 'top',
   },
@@ -375,26 +395,6 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     fontWeight: '700',
   },
-  saveButton: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.companionBerry,
-    borderColor: theme.colors.companionBerry,
-    borderCurve: 'continuous',
-    borderRadius: 15,
-    borderWidth: 1,
-    boxShadow: `0 5px 12px rgba(146, 36, 75, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
-    height: 52,
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  saveText: {
-    color: theme.colors.companionSurface,
-    fontWeight: '700',
-  },
-  saveButtonPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.99 }],
-  },
   sheetTitleIcon: {
     borderColor: theme.colors.companionHighlight,
     borderCurve: 'continuous',
@@ -404,6 +404,8 @@ const styles = StyleSheet.create({
   },
   softCaption: {
     color: theme.colors.textSecondary,
+    marginTop: 6,
+    textAlign: 'center',
   },
   softCheck: {
     alignItems: 'center',

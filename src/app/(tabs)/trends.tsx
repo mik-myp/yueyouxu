@@ -21,7 +21,7 @@ export default function TrendsScreen() {
         showsVerticalScrollIndicator={false}
         tabIndex={0}
       >
-        <Box paddingHorizontal="page" paddingTop="m">
+        <Box paddingHorizontal="page" paddingTop="l">
           <Text style={styles.title} variant="title">
             趋势
           </Text>
@@ -30,7 +30,7 @@ export default function TrendsScreen() {
           </Text>
         </Box>
 
-        <Box marginTop="l" paddingHorizontal="page">
+        <Box marginTop="xl" paddingHorizontal="page">
           <SectionHeading action="近 4 个周期" title="周期长度" />
           <Box alignItems="baseline" flexDirection="row" gap="s" marginTop="m">
             <Text style={styles.heroNumber} variant="heroNumber">
@@ -59,7 +59,7 @@ export default function TrendsScreen() {
           borderBottomWidth={StyleSheet.hairlineWidth}
           borderTopColor="companionCashmereStrong"
           borderTopWidth={StyleSheet.hairlineWidth}
-          marginTop="xl"
+          marginTop="xxl"
           paddingHorizontal="page"
           paddingBottom="l"
           paddingTop="m"
@@ -102,7 +102,7 @@ export default function TrendsScreen() {
           </Box>
         </Box>
 
-        <Box marginTop="xl">
+        <Box marginTop="xxl">
           <Box paddingHorizontal="page">
             <SectionHeading action="全部记录" title="历史经期" />
           </Box>
@@ -190,7 +190,7 @@ function MetricIcon({ accent, icon: Icon }: MetricIconProps) {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
   chartFrame: {
     marginTop: 2,

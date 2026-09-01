@@ -3,7 +3,6 @@ import {
   ArrowRight,
   CalendarPlus,
   Drop,
-  GearSix,
   Heart,
   Heartbeat,
   Sparkle,
@@ -13,7 +12,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { CycleArc } from '@/components/cycle-arc';
-import { IconButton } from '@/components/icon-button';
 import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
 import { SectionHeading } from '@/components/section-heading';
@@ -57,26 +55,32 @@ export default function TodayScreen() {
           flexDirection="row"
           justifyContent="space-between"
           paddingHorizontal="page"
-          paddingTop="m"
+          paddingTop="l"
         >
-          <Box>
-            <Text style={styles.eyebrow}>2026年9月</Text>
-            <Text style={styles.pageTitle} variant="title">
-              1日，星期二
-            </Text>
+          <Box flex={1}>
+            <Box alignItems="center" flexDirection="row" gap="s">
+              <Text style={styles.yearMonth}>2026年9月</Text>
+              <Box style={styles.todayPill}>
+                <Text style={styles.todayText}>今天</Text>
+              </Box>
+            </Box>
+            <Box
+              alignItems="baseline"
+              flexDirection="row"
+              flexWrap="wrap"
+              gap="m"
+            >
+              <Text style={styles.dayTitle}>1日</Text>
+              <Text style={styles.weekdayTitle}>星期二</Text>
+            </Box>
           </Box>
-          <IconButton
-            accessibilityLabel="设置"
-            icon={GearSix}
-            onPress={() => router.push('/settings')}
-          />
         </Box>
 
-        <Box paddingHorizontal="s">
+        <Box marginTop="s" paddingHorizontal="s">
           <CycleArc />
         </Box>
 
-        <Box gap="s" paddingHorizontal="page">
+        <Box gap="m" paddingHorizontal="page">
           <PrimaryButton
             icon={periodActive ? Heart : CalendarPlus}
             label={periodActive ? '月经结束' : '月经来了'}
@@ -92,7 +96,7 @@ export default function TodayScreen() {
           ) : null}
         </Box>
 
-        <Box marginTop="xl" gap="m">
+        <Box marginTop="xxl" gap="m">
           <Box paddingHorizontal="page">
             <SectionHeading action="已记录 3 项" title="今天的记录" />
           </Box>
@@ -218,16 +222,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   content: {
-    paddingBottom: 36,
+    paddingBottom: 44,
   },
-  eyebrow: {
+  dayTitle: {
+    color: theme.colors.companionInk,
+    fontSize: 32,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '700',
+    lineHeight: 40,
+  },
+  todayPill: {
+    backgroundColor: theme.colors.companionBerryWash,
+    borderCurve: 'continuous',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  todayText: {
     color: theme.colors.companionBerry,
     fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  pageTitle: {
-    color: theme.colors.companionInk,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   pressed: {
     opacity: 0.6,
@@ -247,6 +262,19 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     borderRadius: 14,
     boxShadow: `0 6px 18px rgba(58, 46, 52, 0.2)`,
+  },
+  weekdayTitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
+  },
+  yearMonth: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '600',
+    lineHeight: 20,
   },
   undoButton: {
     minHeight: 40,

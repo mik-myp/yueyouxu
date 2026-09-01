@@ -21,6 +21,7 @@ export const theme = createTheme({
     companionCashmereStrong: '#E9DCE1',
     companionBerry: '#C02F5B',
     companionBerrySoft: '#F7C8D5',
+    companionBerryOutline: '#E8A6B8',
     companionBerryWash: '#FCEAF0',
     companionLavender: '#6D5C96',
     companionLavenderWash: '#F0EAF5',

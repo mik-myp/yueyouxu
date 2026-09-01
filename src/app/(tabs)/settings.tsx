@@ -1,7 +1,5 @@
-import { useRouter } from 'expo-router';
 import {
   CalendarHeart,
-  CaretLeft,
   CaretRight,
   ShieldCheck,
   TrashSimple,
@@ -10,13 +8,10 @@ import {
 } from '@/components/soft-icons';
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 
-import { IconButton } from '@/components/icon-button';
 import { Page } from '@/components/page';
 import { Box, Text, theme } from '@/theme';
 
 export default function SettingsScreen() {
-  const router = useRouter();
-
   function confirmClear() {
     Alert.alert('清除全部数据', '此操作将在数据功能接入后删除本地记录。', [
       { text: '取消', style: 'cancel' },
@@ -26,24 +21,19 @@ export default function SettingsScreen() {
 
   return (
     <Page>
-      <Box
-        alignItems="center"
-        flexDirection="row"
-        minHeight={56}
-        paddingHorizontal="s"
-      >
-        <IconButton
-          accessibilityLabel="返回"
-          icon={CaretLeft}
-          onPress={() => router.back()}
-        />
-        <Text variant="title">设置</Text>
+      <Box paddingHorizontal="page" paddingTop="l">
+        <Text style={styles.title} variant="title">
+          设置
+        </Text>
+        <Text style={styles.subtitle} variant="caption">
+          管理周期默认值与本地数据
+        </Text>
       </Box>
 
       <ScrollView contentContainerStyle={styles.content} tabIndex={0}>
         <Box paddingHorizontal="page">
           <Text marginBottom="s" variant="caption">
-            周期默认值
+            周期与记录
           </Text>
         </Box>
         <Box style={styles.settingsGroup}>
@@ -96,7 +86,7 @@ export default function SettingsScreen() {
         </Box>
 
         <Text marginTop="l" textAlign="center" variant="caption">
-          Yueyouxu v0.1 UI Prototype
+          月有序 v0.1
         </Text>
       </ScrollView>
     </Page>
@@ -158,7 +148,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    paddingBottom: 40,
+    paddingBottom: 48,
+    paddingTop: 32,
   },
   pressed: {
     opacity: 0.65,
@@ -187,5 +178,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.colors.companionCashmereStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  subtitle: {
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
+  title: {
+    color: theme.colors.companionInk,
   },
 });
