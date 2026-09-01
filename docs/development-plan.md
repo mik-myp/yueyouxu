@@ -48,7 +48,7 @@
 
 ## 批次 1.5：Soft Companion 视觉验证
 
-状态：实现完成，待 iOS 与 Android 真机验收；通过前不向其他页面推广新视觉。结果参见 [批次 1.5 Soft Companion 视觉验证结果](./batch-1.5-result.md)。
+状态：已完成并通过验收，结果参见 [批次 1.5 Soft Companion 视觉验证结果](./batch-1.5-result.md)。
 
 建议分支：`batch/1.5-soft-companion-visual-validation`
 
@@ -177,7 +177,7 @@
 ## 批次决策点
 
 - 批次 0：确认 Expo Go 或 Development Build，以及 SQLite 数据访问方案。
-- 批次 1.5：真机确认 `Sorbet + Cashmere + Soft Pouf` 的组合，决定通过、调整后复验或放弃；通过前不推广到其他页面。
+- 批次 1.5：已确认采用 `Sorbet + Cashmere + Soft Pouf` 组合；后续页面可在各自批次中推广，不回填扩大批次 1.5 范围。
 - 批次 3 前：确认历史经期允许修正的粒度。
 - 批次 4 前：确认预测范围和置信等级的计算口径。
 - 批次 5 前：确认趋势指标的定义和展示口径。
