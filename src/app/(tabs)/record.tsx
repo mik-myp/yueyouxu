@@ -1,13 +1,6 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import {
-  CheckCircle,
-  Drop,
-  Heartbeat,
-  NotePencil,
-  Smiley,
-  Sparkle,
-} from '@/components/soft-icons';
-import { useRef, useState } from 'react';
+import { CheckCircle, Drop, Heartbeat, Sparkle } from '@/components/soft-icons';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { MonthCalendar } from '@/components/month-calendar';
@@ -15,31 +8,77 @@ import { Page } from '@/components/page';
 import { RecordDetailSheet } from '@/components/record-detail-sheet';
 import { RecordRow } from '@/components/record-row';
 import { useAppData } from '@/data/app-data-provider';
-import { currentTimeZone } from '@/domain/local-date';
 import {
-  initialDailyRecord,
-  prototypeToday,
-} from '@/features/prototype/mock-data';
+  addLocalDays,
+  currentTimeZone,
+  formatLocalDate,
+} from '@/domain/local-date';
 import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
+import type { DailyRecord, Period } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
 
 export default function RecordScreen() {
+  const today = useMemo(() => formatLocalDate(new Date()), []);
   const sheetRef = useRef<BottomSheetModal>(null);
-  const [selectedDate, setSelectedDate] = useState(prototypeToday);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
   const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
-  const [draft, setDraft] = useState<DailyRecordDraft>(initialDailyRecord);
-  const { periods, recordPeriod } = useAppData();
-  const [periodActive, setPeriodActive] = useState(() =>
-    periods.some(
-      (period) =>
-        period.startDate <= prototypeToday &&
-        (period.endDate === null || period.endDate >= prototypeToday),
-    ),
+  const [actionError, setActionError] = useState<string | null>(null);
+  const {
+    dailyRecords,
+    periods,
+    prediction,
+    recordPeriod,
+    saveDailyRecord,
+    settings,
+  } = useAppData();
+  const [draft, setDraft] = useState<DailyRecordDraft>(() => {
+    const saved = dailyRecords.find((record) => record.recordDate === today);
+    return saved ? toDraft(saved) : emptyDraft();
+  });
+  const selectedPeriod = findPeriodForDate(periods, selectedDate);
+  const referencePeriodLength =
+    prediction?.periodLength ?? settings?.referencePeriodLength ?? 5;
+  const openPeriodForSelectedDate = [...periods]
+    .filter(
+      (period) => period.endDate === null && period.startDate <= selectedDate,
+    )
+    .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
+  const periodToEnd = selectedPeriod ?? openPeriodForSelectedDate;
+  const estimatedPeriodRanges = getEstimatedPeriodRanges(
+    periods,
+    referencePeriodLength,
   );
+  const selectedEstimatedRange = openPeriodForSelectedDate
+    ? estimatedPeriodRanges.find(
+        (range) => range.periodId === openPeriodForSelectedDate.id,
+      )
+    : null;
+  const periodButtonPrimary = Boolean(periodToEnd);
 
   function openSheet(kind: RecordKind) {
+    const saved = dailyRecords.find(
+      (record) => record.recordDate === selectedDate,
+    );
+    setDraft(saved ? toDraft(saved) : emptyDraft());
     setActiveKind(kind);
     requestAnimationFrame(() => sheetRef.current?.present());
+  }
+
+  function saveDraft(nextDraft: DailyRecordDraft) {
+    setActionError(null);
+    void saveDailyRecord({
+      record: {
+        flow: nextDraft.flow || null,
+        pain: nextDraft.pain || null,
+        symptoms: nextDraft.symptoms,
+        timeZone: currentTimeZone(),
+      },
+      recordDate: selectedDate,
+    }).catch((error) => {
+      setActionError(
+        error instanceof Error ? error.message : '每日记录保存失败',
+      );
+    });
   }
 
   function closeSheet() {
@@ -47,33 +86,57 @@ export default function RecordScreen() {
   }
 
   function selectDate(date: string) {
+    setActionError(null);
     setSelectedDate(date);
-    setPeriodActive(
-      periods.some(
-        (period) =>
-          period.startDate <= date &&
-          (period.endDate === null || period.endDate >= date),
-      ),
-    );
+    const saved = dailyRecords.find((record) => record.recordDate === date);
+    setDraft(saved ? toDraft(saved) : emptyDraft());
   }
 
   async function togglePeriod() {
+    setActionError(null);
     try {
       await recordPeriod({
-        action: periodActive ? 'end' : 'start',
+        action: periodToEnd ? 'end' : 'start',
+        periodId: periodToEnd?.id,
         startDate: selectedDate,
         timeZone: currentTimeZone(),
       });
-      setPeriodActive((current) => !current);
-    } catch {
-      // The next batch will add inline errors to record actions.
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : '经期记录失败');
     }
   }
 
   function selectedDateLabel() {
-    if (selectedDate === prototypeToday) return '9月1日 · 今天';
+    if (selectedDate === today) {
+      const [, month, day] = selectedDate.split('-');
+      return `${Number(month)}月${Number(day)}日 · 今天`;
+    }
     const [, month, day] = selectedDate.split('-');
     return `${Number(month)}月${Number(day)}日`;
+  }
+
+  function periodCaption() {
+    if (selectedPeriod?.endDate) {
+      if (selectedDate === selectedPeriod.startDate) {
+        return '已标记月经来了';
+      }
+      if (selectedDate === selectedPeriod.endDate) {
+        return '已标记月经走了';
+      }
+      return '已记录为实际经期';
+    }
+    if (selectedPeriod && selectedEstimatedRange) {
+      return `已标记月经来了 · 预计至 ${formatShortDate(selectedEstimatedRange.end)}`;
+    }
+    if (openPeriodForSelectedDate) {
+      return `${formatShortDate(openPeriodForSelectedDate.startDate)} 月经来了 · 当前选择为走了日期`;
+    }
+    return selectedDate < today ? '非经期记录 · 可标记月经来了' : '非经期记录';
+  }
+
+  function periodButtonLabel() {
+    if (periodToEnd) return '月经走了';
+    return '月经来了';
   }
 
   return (
@@ -86,10 +149,25 @@ export default function RecordScreen() {
       >
         <Box paddingTop="m">
           <MonthCalendar
+            dailyRecords={dailyRecords}
+            estimatedPeriodRanges={estimatedPeriodRanges}
             onSelectDate={selectDate}
+            periods={periods}
+            prediction={prediction}
             selectedDate={selectedDate}
+            today={today}
           />
         </Box>
+
+        {actionError ? (
+          <Text
+            paddingBottom="m"
+            paddingHorizontal="page"
+            style={styles.errorText}
+          >
+            {actionError}
+          </Text>
+        ) : null}
 
         <Box
           alignItems="center"
@@ -98,12 +176,12 @@ export default function RecordScreen() {
           paddingHorizontal="page"
           style={styles.dateSummary}
         >
-          <Box>
+          <Box flex={1} paddingRight="s">
             <Text style={styles.dateTitle} variant="sectionTitle">
               {selectedDateLabel()}
             </Text>
             <Text style={styles.dateCaption} variant="caption">
-              {periodActive ? '经期中 · 记录会用于个人周期分析' : '非经期记录'}
+              {periodCaption()}
             </Text>
           </Box>
           <Pressable
@@ -111,10 +189,10 @@ export default function RecordScreen() {
             onPress={() => void togglePeriod()}
             style={[
               styles.periodButton,
-              !periodActive && styles.periodButtonInactive,
+              !periodButtonPrimary && styles.periodButtonInactive,
             ]}
           >
-            {periodActive ? (
+            {periodButtonPrimary ? (
               <CheckCircle
                 color={theme.colors.companionSurface}
                 size={18}
@@ -128,10 +206,10 @@ export default function RecordScreen() {
               />
             )}
             <Text
-              style={periodActive ? styles.periodButtonText : undefined}
+              style={periodButtonPrimary ? styles.periodButtonText : undefined}
               variant="label"
             >
-              {periodActive ? '月经结束' : '月经来了'}
+              {periodButtonLabel()}
             </Text>
           </Pressable>
         </Box>
@@ -148,36 +226,25 @@ export default function RecordScreen() {
             icon={Drop}
             label="流量"
             onPress={() => openSheet('flow')}
-            value={draft.flow}
+            recorded={Boolean(draft.flow)}
+            value={draft.flow || '未记录'}
           />
           <RecordRow
             accent={theme.colors.companionApricot}
             icon={Heartbeat}
             label="痛感"
             onPress={() => openSheet('pain')}
-            value={draft.pain}
+            recorded={Boolean(draft.pain)}
+            value={draft.pain || '未记录'}
           />
           <RecordRow
             accent={theme.colors.companionLavender}
             icon={Sparkle}
+            isLast
             label="症状"
             onPress={() => openSheet('symptoms')}
+            recorded={draft.symptoms.length > 0}
             value={draft.symptoms.length ? draft.symptoms.join('、') : '未记录'}
-          />
-          <RecordRow
-            accent={theme.colors.companionSage}
-            icon={Smiley}
-            label="心情"
-            onPress={() => openSheet('mood')}
-            value={draft.mood}
-          />
-          <RecordRow
-            accent={theme.colors.textMuted}
-            icon={NotePencil}
-            isLast
-            label="备注"
-            onPress={() => openSheet('note')}
-            value={draft.note || '未记录'}
           />
         </Box>
       </ScrollView>
@@ -187,12 +254,66 @@ export default function RecordScreen() {
         draft={draft}
         key={activeKind ?? 'closed'}
         onChange={setDraft}
+        onConfirm={saveDraft}
         onClose={closeSheet}
         onDismiss={() => setActiveKind(null)}
         ref={sheetRef}
       />
     </Page>
   );
+}
+
+type DailyRecordPeriod = Period;
+
+function findPeriodForDate(periods: DailyRecordPeriod[], date: string) {
+  return (
+    periods.find(
+      (period) =>
+        period.startDate <= date &&
+        (period.endDate ? period.endDate >= date : period.startDate === date),
+    ) ?? null
+  );
+}
+
+function getEstimatedPeriodRanges(
+  periods: DailyRecordPeriod[],
+  referencePeriodLength: number,
+) {
+  const sortedPeriods = [...periods].sort((left, right) =>
+    left.startDate.localeCompare(right.startDate),
+  );
+
+  return sortedPeriods.flatMap((period, index) => {
+    if (period.endDate !== null || referencePeriodLength < 2) return [];
+    const nextPeriod = sortedPeriods[index + 1];
+    const estimatedEnd = addLocalDays(
+      period.startDate,
+      referencePeriodLength - 1,
+    );
+    const end = nextPeriod
+      ? [estimatedEnd, addLocalDays(nextPeriod.startDate, -1)].sort()[0]
+      : estimatedEnd;
+    const start = addLocalDays(period.startDate, 1);
+
+    return start <= end ? [{ end, periodId: period.id, start }] : [];
+  });
+}
+
+function emptyDraft(): DailyRecordDraft {
+  return { flow: '', pain: '', symptoms: [] };
+}
+
+function toDraft(record: DailyRecord): DailyRecordDraft {
+  return {
+    flow: record.flow ?? '',
+    pain: record.pain ?? '',
+    symptoms: record.symptoms,
+  };
+}
+
+function formatShortDate(value: string) {
+  const [, month, day] = value.split('-').map(Number);
+  return `${month}月${day}日`;
 }
 
 const styles = StyleSheet.create({
@@ -209,6 +330,11 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     color: theme.colors.companionInk,
+  },
+  errorText: {
+    color: theme.colors.periodAction,
+    fontSize: 13,
+    lineHeight: 20,
   },
   periodButton: {
     alignItems: 'center',

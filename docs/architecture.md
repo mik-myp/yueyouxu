@@ -8,7 +8,6 @@
 - UI 设计系统采用 `@shopify/restyle`，不直接套用完整视觉组件库。
 - 数据存储本地优先，核心记录和预测离线可用。
 - 本地确定性算法是预测和趋势的事实来源。
-- AI 是后续版本中由用户主动启用的可选解读层，支持配置 OpenAI 兼容服务的 `baseURL`、API Key 和模型。
 
 ## v0.1 实施边界
 
@@ -26,7 +25,6 @@ v0.1 只交付本地离线基础闭环：首次设置、经期开始和结束、
 | 设计令牌和组件变体 | `@shopify/restyle`                        |
 | 本地数据库         | `expo-sqlite`                             |
 | SQL 与迁移         | Drizzle ORM + Repository                  |
-| 敏感配置           | `expo-secure-store`                       |
 | 月历               | `react-native-calendars` + 自定义日期单元 |
 | 周期弧与简单图表   | `react-native-svg`                        |
 | 动画               | `react-native-reanimated`                 |
@@ -36,7 +34,7 @@ v0.1 只交付本地离线基础闭环：首次设置、经期开始和结束、
 | 通知               | `expo-notifications`                      |
 | 生物识别锁         | `expo-local-authentication`               |
 
-表中的敏感配置、通知、生物识别和长列表方案仍属于后续版本候选项，未在 v0.1 批次 0 安装。
+表中的通知、生物识别和长列表方案仍属于后续版本候选项，未在 v0.1 批次 0 安装。
 
 ## 模块边界
 
@@ -47,7 +45,6 @@ Application use cases
     |-- Record observation
     |-- Close or correct a period
     |-- Recalculate local analysis
-    |-- Request optional AI interpretation (post-v0.1)
     |
 Domain
     |-- Cycle and observation rules
@@ -56,16 +53,14 @@ Domain
     |
 Repositories
     |-- SQLite records
-    |-- Secure configuration (post-v0.1)
     |-- Export/import (post-v0.1)
     |
 External adapters
     |-- Notifications (post-v0.1)
-    |-- AI providers (post-v0.1)
     |-- Optional future sync
 ```
 
-Domain 层不得依赖页面、Restyle、OpenAI SDK 或具体数据库实现。这样预测算法可以使用固定样本独立测试，也可以在未来替换存储层。
+Domain 层不得依赖页面、Restyle、网络服务或具体数据库实现。这样预测算法可以使用固定样本独立测试，也可以在未来替换存储层。
 
 ## 本地数据模型
 
@@ -74,17 +69,16 @@ Domain 层不得依赖页面、Restyle、OpenAI SDK 或具体数据库实现。�
 ### 核心事实
 
 - `periods`：经期开始日、结束日、确认状态和修订时间。
-- `daily_records`：本地日期、流量、痛经、情绪、备注和创建/更新时间。
-- `daily_symptoms`：每日记录与症状代码、程度之间的关联。
+- `daily_records`：本地日期、流量、痛感和创建/更新时间。
+- `daily_symptoms`：每日记录与症状代码之间的关联。
 - `app_settings`：单例设置，保存初始化完成状态、是否自动计算、初始周期/经期参考值、记录时区和更新时间。
 
 ### 派生结果
 
 - `analysis_snapshots`：算法版本、生成时间、输入摘要哈希和计算指标。
 - `prediction_windows`：最早日期、中心日期、最晚日期和置信等级。
-- `ai_analysis_runs`（后续版本）：用户触发时间、提供商配置 ID、输入摘要、结果状态和提示词版本。
 
-实际记录是事实，预测和 AI 结果都是可删除、可重算的派生数据。修改历史记录后，应使相关分析快照失效并重新计算。
+实际记录是事实，预测结果是可删除、可重算的派生数据。修改历史记录后，应使相关分析快照失效并重新计算。
 
 ### 日期原则
 
@@ -107,69 +101,14 @@ Domain 层不得依赖页面、Restyle、OpenAI SDK 或具体数据库实现。�
   -> 更新 UI
 ```
 
-第一版建议采用可解释的稳健统计方法：
+第一版采用可解释的稳健统计方法，完整计算口径参见 [v0.1 周期分析口径](./analysis-method.md)：
 
-- 最近 3-6 个完整周期作为主要样本。
-- 使用中位数或有上限的近期加权值，避免一次异常周期主导结果。
-- 使用 MAD 或 IQR 识别异常值，但不删除原始记录。
+- 最近最多 12 个 10～90 天的有效周期间隔作为主要样本。
+- 使用中位数，避免一次异常周期主导结果。
+- 使用 MAD 描述个人波动，但不删除或改写原始记录。
 - 输出日期范围和置信等级，不承诺单日精确预测。
 - 样本不足、周期波动较大或记录中断时，明确降低置信等级。
 - 所有算法用固定数据集覆盖规则、短周期、长周期、跨月、修改和缺失记录。
-
-## 后续版本：可选 AI 服务
-
-本节保留未来实现约束，不属于 v0.1 的开发范围。只有在离线记录、预测和趋势闭环稳定后，才进入 AI 功能设计与实现。
-
-### 角色边界
-
-AI 只负责解释经过本地计算的结构化摘要，例如：
-
-- 最近周期是否比个人基线更长或更短。
-- 症状记录在周期不同阶段的分布。
-- 哪些数据缺失导致预测置信度降低。
-
-AI 不负责确定经期边界，不直接改变记录和预测，也不输出医疗诊断。
-
-### 提供商抽象
-
-建议定义独立接口，而不是在页面中直接调用某个 SDK：
-
-```ts
-type AIProtocol = 'chat-completions' | 'responses';
-
-interface AIProviderConfig {
-  id: string;
-  name: string;
-  baseURL: string;
-  model: string;
-  protocol: AIProtocol;
-}
-
-interface AIAnalysisProvider {
-  validateConfiguration(): Promise<void>;
-  analyze(input: AnalysisInput): Promise<AnalysisResult>;
-}
-```
-
-为兼容更多第三方服务，AI 功能的首个版本可优先实现 `/v1/chat/completions` 适配器；OpenAI Responses API 可作为单独适配器加入，不能假设所有“OpenAI 兼容”服务都完整支持两者。
-
-### API Key 安全
-
-- API Key 只存入 `expo-secure-store`，不得进入 SQLite、日志、崩溃报告或导出文件。
-- 用户自带密钥直连服务端属于 BYOK 模式。移动客户端无法保证密钥不可被设备拥有者、恶意系统或逆向工具提取，界面必须明确提示这一限制。
-- 正式托管服务应提供可撤销、限额的服务端代理，不把项目级密钥下发到客户端。
-- 默认只允许 HTTPS `baseURL`；调试环境使用 HTTP 必须显式开启并展示风险。
-- Expo Web 不应直连携带长期密钥的 AI 服务。
-
-官方 OpenAI 文档要求 API Key 存放于安全位置，并避免暴露在代码或公共仓库中：[Production best practices](https://developers.openai.com/api/docs/guides/production-best-practices#api-keys)。BYOK 客户端模式是产品兼容性选择，不等于密钥获得了服务端级别的保护。
-
-### 数据发送控制
-
-- AI 分析必须由用户主动触发，不允许静默后台上传。
-- 请求前展示发送摘要，默认不发送备注原文、设备标识或精确账户信息。
-- 用户可取消备注、症状或历史范围中的任一类数据。
-- 输出采用版本化结构并在本地进行 schema 校验；不合格输出只显示错误，不能写回事实数据。
-- 保存 AI 结果前询问用户，或提供“仅本次查看”模式。
 
 ## 本地优先与隐私
 
@@ -185,10 +124,8 @@ interface AIAnalysisProvider {
 2. 日历、首页周期弧和快速记录。
 3. 确定性预测、趋势与固定样本测试。
 4. 隐私设置和完整删除，完成 v0.1。
-5. 后续版本再评估通知、导入/导出、生物识别锁、AI 提供商配置、数据预览、结构化输出和安全提示。
+5. 后续版本再评估通知、导入/导出、生物识别锁和数据预览。
 6. 更后续评估可选同步、桌面小组件和健康平台集成。
-
-AI 放在第五阶段，确保断网和不提供 API Key 时仍然是一款完整产品。
 
 ## 待决问题
 
@@ -196,5 +133,3 @@ AI 放在第五阶段，确保断网和不提供 API Key 时仍然是一款完�
 - 数据库是否要求应用级加密。
 - v0.1 趋势指标的定义和计算口径。
 - 后续提醒类型和数据导入/导出格式。
-- 后续 AI 版本只支持 Chat Completions，还是同时支持 Responses。
-- 后续 AI 结果是否默认持久化，以及是否允许多个提供商配置。

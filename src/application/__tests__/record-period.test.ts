@@ -30,7 +30,7 @@ describe('record period', () => {
     const repositories = repository();
     const record = createRecordPeriod(
       repositories,
-      () => new Date('2026-09-02T00:00:00.000Z'),
+      () => new Date('2026-09-05T00:00:00.000Z'),
     );
 
     await record({
@@ -51,6 +51,103 @@ describe('record period', () => {
     });
   });
 
+  it('removes an open period when it is ended on its start date', async () => {
+    const repositories = repository();
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-05T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-05',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-05',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toEqual([]);
+  });
+
+  it('removes a completed period when its start day is marked as ended', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-12'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-11',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toEqual([]);
+  });
+
+  it('reopens a completed period when its end day is marked as ended again', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-12'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    const reopened = await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-12',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(reopened.endDate).toBeNull();
+    expect((await repositories.list())[0].endDate).toBeNull();
+  });
+
+  it('moves a completed period end to a selected date inside its range', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-15'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-13',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect((await repositories.list())[0].endDate).toBe('2026-08-13');
+  });
+
   it('rejects overlapping periods and inverted corrections', async () => {
     const repositories = repository([
       {
@@ -66,10 +163,10 @@ describe('record period', () => {
     await expect(
       record({
         action: 'start',
-        startDate: '2026-09-04',
+        startDate: '2026-09-02',
         timeZone: 'Asia/Shanghai',
       }),
-    ).rejects.toThrow('重叠');
+    ).rejects.toThrow('所选日期范围与已有经期重叠，请调整开始日或结束日');
     await expect(
       record({
         action: 'correct',
@@ -79,5 +176,203 @@ describe('record period', () => {
         timeZone: 'Asia/Shanghai',
       }),
     ).rejects.toThrow('早于');
+  });
+
+  it('does not treat a corrected period id as a new period with the same start date', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-03'),
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-02'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-05T00:00:00.000Z'),
+    );
+
+    await expect(
+      record({
+        action: 'start',
+        endDate: '2026-09-03',
+        startDate: '2026-09-01',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('重叠');
+    await expect(
+      record({
+        action: 'correct',
+        endDate: '2026-09-03',
+        periodId: 'missing-period',
+        startDate: '2026-09-02',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('不存在');
+  });
+
+  it('saves a closed historical period before a newer period without a temporary overlap', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-05'),
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-01'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    const historical = await record({
+      action: 'start',
+      endDate: '2026-08-05',
+      startDate: '2026-08-01',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(historical).toMatchObject({
+      endDate: '2026-08-05',
+      startDate: '2026-08-01',
+    });
+    expect(await repositories.list()).toHaveLength(2);
+  });
+
+  it('keeps nearby user-defined periods as two independent records', async () => {
+    const repositories = repository();
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-02',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'start',
+      startDate: '2026-09-04',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-06',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toMatchObject([
+      { endDate: '2026-09-02', startDate: '2026-09-01' },
+      { endDate: '2026-09-06', startDate: '2026-09-04' },
+    ]);
+  });
+
+  it('persists a historical start event before a newer closed period', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-06'),
+        id: 'period-2026-09-04',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-04'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    const started = await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    expect(started.endDate).toBeNull();
+
+    const ended = await record({
+      action: 'end',
+      startDate: '2026-09-02',
+      timeZone: 'Asia/Shanghai',
+    });
+    expect(ended).toMatchObject({
+      endDate: '2026-09-02',
+      startDate: '2026-09-01',
+    });
+  });
+
+  it('allows a historical open period before a newer open period', async () => {
+    const repositories = repository([
+      {
+        endDate: null,
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-01'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-08-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-08-02',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toMatchObject([
+      { endDate: null, startDate: '2026-09-01' },
+      { endDate: '2026-08-02', startDate: '2026-08-01' },
+    ]);
+  });
+
+  it('rejects a later start on an open timeline and an end crossing another period', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-06'),
+        id: 'period-2026-09-04',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-04'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await expect(
+      record({
+        action: 'start',
+        startDate: '2026-09-03',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('已有进行中的经期');
+    await expect(
+      record({
+        action: 'end',
+        startDate: '2026-09-05',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('存在另一段经期');
   });
 });

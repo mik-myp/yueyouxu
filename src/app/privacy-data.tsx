@@ -1,5 +1,4 @@
 import {
-  CloudSlash,
   Database,
   DeviceMobile,
   TrashSimple,
@@ -61,13 +60,6 @@ export default function PrivacyDataScreen() {
               icon={DeviceMobile}
               label="本地存储"
               value="已启用"
-            />
-            <StatusRow
-              accent={theme.colors.companionLavender}
-              description="没有数据发送到 AI 服务"
-              icon={CloudSlash}
-              label="AI 分析"
-              value="未启用"
             />
             <StatusRow
               accent={theme.colors.companionApricot}

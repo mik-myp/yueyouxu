@@ -1,7 +1,6 @@
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetTextInput,
   BottomSheetView,
   type BottomSheetBackgroundProps,
   type BottomSheetHandleProps,
@@ -13,22 +12,13 @@ import {
   useState,
   type ComponentProps,
 } from 'react';
-import {
-  Keyboard,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import {
   Check,
   Drop,
   Heartbeat,
-  NotePencil,
-  Smiley,
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
@@ -39,15 +29,12 @@ const labels: Record<RecordKind, string> = {
   flow: '流量',
   pain: '痛感',
   symptoms: '症状',
-  mood: '心情',
-  note: '备注',
 };
 
 const options: Partial<Record<RecordKind, string[]>> = {
   flow: ['点滴', '少量', '中量', '多量'],
   pain: ['无', '轻微', '中等', '严重'],
   symptoms: ['腰酸', '腹胀', '头痛', '乏力', '乳房胀痛'],
-  mood: ['平静', '愉快', '低落', '焦虑', '烦躁'],
 };
 
 const kindMeta: Record<
@@ -69,16 +56,6 @@ const kindMeta: Record<
     icon: Sparkle,
     wash: theme.colors.companionLavenderWash,
   },
-  mood: {
-    accent: theme.colors.companionSage,
-    icon: Smiley,
-    wash: theme.colors.companionSageWash,
-  },
-  note: {
-    accent: theme.colors.companionLavender,
-    icon: NotePencil,
-    wash: theme.colors.companionLavenderWash,
-  },
 };
 
 function SheetBackground({ style }: BottomSheetBackgroundProps) {
@@ -97,6 +74,7 @@ type RecordDetailSheetProps = {
   activeKind: RecordKind | null;
   draft: DailyRecordDraft;
   onChange: (draft: DailyRecordDraft) => void;
+  onConfirm: (draft: DailyRecordDraft) => void;
   onClose: () => void;
   onDismiss: () => void;
 };
@@ -105,14 +83,12 @@ export const RecordDetailSheet = forwardRef<
   BottomSheetModal,
   RecordDetailSheetProps
 >(function RecordDetailSheet(
-  { activeKind, draft, onChange, onClose, onDismiss },
+  { activeKind, draft, onChange, onConfirm, onClose, onDismiss },
   ref,
 ) {
   const [pendingDraft, setPendingDraft] = useState(draft);
   const snapPoints = useMemo(() => {
     if (activeKind === 'symptoms') return ['50%'];
-    if (activeKind === 'mood') return ['46%'];
-    if (activeKind === 'note') return ['62%'];
     return ['38%'];
   }, [activeKind]);
   const renderBackdrop = useCallback(
@@ -136,7 +112,7 @@ export const RecordDetailSheet = forwardRef<
   const TitleIcon = meta.icon;
 
   function selectOption(option: string) {
-    if (!activeKind || activeKind === 'note') return;
+    if (!activeKind) return;
 
     if (activeKind === 'symptoms') {
       const next = pendingDraft.symptoms.includes(option)
@@ -151,7 +127,8 @@ export const RecordDetailSheet = forwardRef<
 
   function confirmChanges() {
     Keyboard.dismiss();
-    onChange({ ...pendingDraft, note: pendingDraft.note.trim() });
+    onChange(pendingDraft);
+    onConfirm(pendingDraft);
     requestAnimationFrame(onClose);
   }
 
@@ -218,99 +195,60 @@ export const RecordDetailSheet = forwardRef<
           </Pressable>
         </Box>
         <Text style={styles.softCaption} variant="caption">
-          {activeKind === 'note'
-            ? '最多 200 字，确认后保存'
-            : isMulti
-              ? '可以选择多项，确认后保存'
-              : '选择一项，确认后保存'}
+          {isMulti ? '可以选择多项，确认后保存' : '选择一项，确认后保存'}
         </Text>
 
-        {activeKind === 'note' ? (
-          <Box marginTop="l">
-            {Platform.OS === 'web' ? (
-              <TextInput
-                accessibilityLabel="备注"
-                maxLength={200}
-                multiline
-                onChangeText={(note) =>
-                  setPendingDraft({ ...pendingDraft, note })
-                }
-                placeholder="记录今天想留下的内容"
-                placeholderTextColor={theme.colors.textMuted}
-                style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
-                value={pendingDraft.note}
-              />
-            ) : (
-              <BottomSheetTextInput
-                accessibilityLabel="备注"
-                maxLength={200}
-                multiline
-                onChangeText={(note) =>
-                  setPendingDraft({ ...pendingDraft, note })
-                }
-                placeholder="记录今天想留下的内容"
-                placeholderTextColor={theme.colors.textMuted}
-                style={[styles.noteInput, { borderColor: `${meta.accent}3D` }]}
-                value={pendingDraft.note}
-              />
-            )}
-          </Box>
-        ) : (
-          <Box flexDirection="row" flexWrap="wrap" gap="s" marginTop="l">
-            {options[activeKind]?.map((option) => {
-              const isSelected = Array.isArray(selected)
-                ? selected.includes(option)
-                : selected === option;
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  key={option}
-                  onPress={() => selectOption(option)}
-                  style={({ pressed }) => [
-                    styles.option,
-                    { backgroundColor: meta.wash },
+        <Box flexDirection="row" flexWrap="wrap" gap="s" marginTop="l">
+          {options[activeKind]?.map((option) => {
+            const isSelected = Array.isArray(selected)
+              ? selected.includes(option)
+              : selected === option;
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                key={option}
+                onPress={() => selectOption(option)}
+                style={({ pressed }) => [
+                  styles.option,
+                  { backgroundColor: meta.wash },
+                  isSelected && [
+                    styles.optionSelected,
+                    {
+                      borderColor: `${meta.accent}55`,
+                      boxShadow: `inset 0 2px 5px ${meta.accent}24, 0 1px 2px ${theme.colors.companionHighlight}`,
+                    },
+                  ],
+                  pressed && styles.optionPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
                     isSelected && [
-                      styles.optionSelected,
-                      {
-                        borderColor: `${meta.accent}55`,
-                        boxShadow: `inset 0 2px 5px ${meta.accent}24, 0 1px 2px ${theme.colors.companionHighlight}`,
-                      },
+                      styles.optionTextSelected,
+                      { color: meta.accent },
                     ],
-                    pressed && styles.optionPressed,
                   ]}
+                  variant="label"
                 >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      isSelected && [
-                        styles.optionTextSelected,
-                        { color: meta.accent },
-                      ],
-                    ]}
-                    variant="label"
+                  {option}
+                </Text>
+                {isSelected ? (
+                  <View
+                    style={[styles.softCheck, { backgroundColor: meta.accent }]}
                   >
-                    {option}
-                  </Text>
-                  {isSelected ? (
-                    <View
-                      style={[
-                        styles.softCheck,
-                        { backgroundColor: meta.accent },
-                      ]}
-                    >
-                      <Check
-                        color={theme.colors.companionSurface}
-                        size={13}
-                        weight="bold"
-                      />
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </Box>
-        )}
+                    <Check
+                      color={theme.colors.companionSurface}
+                      size={13}
+                      weight="bold"
+                    />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </Box>
       </BottomSheetView>
     </BottomSheetModal>
   );
@@ -357,17 +295,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 24,
     justifyContent: 'center',
-  },
-  noteInput: {
-    backgroundColor: theme.colors.companionCashmere,
-    borderCurve: 'continuous',
-    borderRadius: 15,
-    borderWidth: 1,
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    minHeight: 180,
-    padding: 16,
-    textAlignVertical: 'top',
   },
   option: {
     alignItems: 'center',

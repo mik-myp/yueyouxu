@@ -37,8 +37,6 @@ export const migrations: Migration[] = [
         record_date TEXT NOT NULL UNIQUE CHECK (record_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
         flow TEXT,
         pain TEXT,
-        mood TEXT,
-        note TEXT,
         time_zone TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -48,7 +46,6 @@ export const migrations: Migration[] = [
       CREATE TABLE IF NOT EXISTS daily_symptoms (
         daily_record_id TEXT NOT NULL REFERENCES daily_records(id) ON DELETE CASCADE,
         symptom_code TEXT NOT NULL,
-        severity INTEGER CHECK (severity IS NULL OR severity BETWEEN 1 AND 3),
         PRIMARY KEY (daily_record_id, symptom_code)
       );
 

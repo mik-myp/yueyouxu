@@ -1,14 +1,24 @@
 import { Calendar, LocaleConfig, type DateData } from 'react-native-calendars';
 import { Redirect, useRouter } from 'expo-router';
-import { CalendarHeart, Minus, Plus } from '@/components/soft-icons';
+import {
+  CalendarHeart,
+  CaretLeft,
+  CaretRight,
+  Minus,
+  Plus,
+} from '@/components/soft-icons';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
 import { SoftToggle } from '@/components/soft-toggle';
 import { useAppData } from '@/data/app-data-provider';
-import { currentTimeZone, formatLocalDate } from '@/domain/local-date';
+import {
+  currentTimeZone,
+  formatLocalDate,
+  parseLocalDate,
+} from '@/domain/local-date';
 import { DEFAULT_PREDICTION_SETTINGS } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
 
@@ -179,6 +189,21 @@ export default function OnboardingScreen() {
             <Box marginTop="l" paddingHorizontal="s">
               <Calendar
                 current={lastPeriodStartDate}
+                customHeader={OnboardingCalendarHeader}
+                dayComponent={({ date, state }) => (
+                  <OnboardingDay
+                    date={date}
+                    disabled={
+                      state === 'disabled' || !date || date.dateString > today
+                    }
+                    onPress={() =>
+                      date &&
+                      setLastPeriodStartDate(parseLocalDate(date.dateString))
+                    }
+                    selected={date?.dateString === lastPeriodStartDate}
+                    today={today}
+                  />
+                )}
                 enableSwipeMonths
                 firstDay={0}
                 markedDates={{
@@ -301,6 +326,101 @@ function formatChineseDate(value: string) {
   return `${year}年${month}月${day}日`;
 }
 
+const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+function OnboardingCalendarHeader({
+  addMonth,
+  month,
+}: {
+  addMonth?: (amount: number) => void;
+  month?: Date;
+}) {
+  return (
+    <View>
+      <View style={styles.monthHeader}>
+        <Pressable
+          accessibilityLabel="上个月"
+          accessibilityRole="button"
+          onPress={() => addMonth?.(-1)}
+          style={styles.monthButton}
+        >
+          <CaretLeft
+            color={theme.colors.companionInk}
+            size={19}
+            weight="bold"
+          />
+        </Pressable>
+        <Text variant="sectionTitle">
+          {month?.getFullYear()}年{(month?.getMonth() ?? 0) + 1}月
+        </Text>
+        <Pressable
+          accessibilityLabel="下个月"
+          accessibilityRole="button"
+          onPress={() => addMonth?.(1)}
+          style={styles.monthButton}
+        >
+          <CaretRight
+            color={theme.colors.companionInk}
+            size={19}
+            weight="bold"
+          />
+        </Pressable>
+      </View>
+      <View style={styles.weekHeader}>
+        {weekDays.map((day) => (
+          <Text key={day} style={styles.weekDay}>
+            {day}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function OnboardingDay({
+  date,
+  disabled,
+  onPress,
+  selected,
+  today,
+}: {
+  date?: DateData;
+  disabled: boolean;
+  onPress: () => void;
+  selected: boolean;
+  today: string;
+}) {
+  if (!date) return null;
+  const isToday = date.dateString === today;
+  const label = `${date.month}月${date.day}日${isToday ? '，今天' : ''}${
+    selected ? '，已选择' : ''
+  }`;
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.calendarDay,
+        selected && styles.calendarDaySelected,
+        disabled && styles.calendarDayDisabled,
+      ]}
+    >
+      <Text
+        style={[
+          styles.calendarDayText,
+          isToday && styles.calendarTodayText,
+          selected && styles.calendarDayTextSelected,
+        ]}
+      >
+        {date.day}
+      </Text>
+    </Pressable>
+  );
+}
+
 function ReferenceControl({
   isLast,
   label,
@@ -397,6 +517,31 @@ const styles = StyleSheet.create({
   calendar: {
     backgroundColor: theme.colors.companionCanvas,
   },
+  calendarDay: {
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  calendarDayDisabled: {
+    opacity: 0.32,
+  },
+  calendarDaySelected: {
+    backgroundColor: theme.colors.companionBerry,
+  },
+  calendarDayText: {
+    color: theme.colors.companionInk,
+    fontSize: 15,
+  },
+  calendarDayTextSelected: {
+    color: theme.colors.companionSurface,
+    fontWeight: '700',
+  },
+  calendarTodayText: {
+    color: theme.colors.companionBerry,
+    fontWeight: '700',
+  },
   content: {
     paddingBottom: 48,
     paddingTop: 16,
@@ -414,6 +559,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 32,
+  },
+  monthButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  monthHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 52,
   },
   pressed: {
     opacity: 0.65,
@@ -463,5 +620,15 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     width: 40,
+  },
+  weekDay: {
+    color: theme.colors.textMuted,
+    flex: 1,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    height: 28,
   },
 });
