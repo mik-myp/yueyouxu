@@ -72,7 +72,9 @@ export function createRecordPeriod(
         command.action === 'correct' && period.id === command.periodId;
       return !correctingSelf && overlaps(next, period);
     });
-    if (conflict) throw new Error('日期与已有经期重叠，请先修正已有记录');
+    if (conflict) {
+      throw new Error('所选日期范围与已有经期重叠，请调整开始日或结束日');
+    }
 
     await repository.save(id, next, now().toISOString());
     return {

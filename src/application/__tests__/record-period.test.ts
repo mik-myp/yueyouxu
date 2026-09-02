@@ -69,7 +69,7 @@ describe('record period', () => {
         startDate: '2026-09-02',
         timeZone: 'Asia/Shanghai',
       }),
-    ).rejects.toThrow('重叠');
+    ).rejects.toThrow('所选日期范围与已有经期重叠，请调整开始日或结束日');
     await expect(
       record({
         action: 'correct',
@@ -112,5 +112,34 @@ describe('record period', () => {
         timeZone: 'Asia/Shanghai',
       }),
     ).rejects.toThrow('不存在');
+  });
+
+  it('saves a closed historical period before a newer period without a temporary overlap', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-05'),
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-01'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    const historical = await record({
+      action: 'start',
+      endDate: '2026-08-05',
+      startDate: '2026-08-01',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(historical).toMatchObject({
+      endDate: '2026-08-05',
+      startDate: '2026-08-01',
+    });
+    expect(await repositories.list()).toHaveLength(2);
   });
 });

@@ -22,6 +22,7 @@ import { Text, theme } from '@/theme';
 
 type MonthCalendarProps = {
   dailyRecords?: DailyRecord[];
+  draftPeriodRange?: { end: string; start: string } | null;
   onSelectDate: (date: string) => void;
   periods?: Period[];
   prediction?: PredictionWindow | null;
@@ -59,11 +60,13 @@ function DayCell({
   dailyRecords,
   prediction,
   today,
+  draftPeriodRange,
 }: DayCellProps & {
   periods: Period[];
   dailyRecords: DailyRecord[];
   prediction?: PredictionWindow | null;
   today: string;
+  draftPeriodRange?: { end: string; start: string } | null;
 }) {
   if (!date) return null;
 
@@ -72,14 +75,20 @@ function DayCell({
     inRange(key, period.startDate, period.endDate ?? today),
   );
   const actual = Boolean(actualPeriod);
+  const draft = Boolean(
+    draftPeriodRange &&
+    inRange(key, draftPeriodRange.start, draftPeriodRange.end),
+  );
   const predicted = Boolean(
     prediction && inRange(key, prediction.earliestDate, prediction.latestDate),
   );
   const range = actualPeriod
     ? { start: actualPeriod.startDate, end: actualPeriod.endDate ?? today }
-    : prediction
-      ? { start: prediction.earliestDate, end: prediction.latestDate }
-      : null;
+    : draftPeriodRange && draft
+      ? draftPeriodRange
+      : prediction
+        ? { start: prediction.earliestDate, end: prediction.latestDate }
+        : null;
   const start = Boolean(range && key === range.start);
   const end = Boolean(range && key === range.end);
   const disabled = state === 'disabled';
@@ -87,6 +96,7 @@ function DayCell({
   const isToday = key === today;
   const statusLabel = [
     actual && '实际经期',
+    draft && '待确认经期',
     predicted && '预测经期',
     recorded && '已记录',
     isToday && '今天',
@@ -99,19 +109,25 @@ function DayCell({
           color: theme.colors.companionBerry,
           icon: Drop,
         }
-      : predicted && start
+      : draft && start
         ? {
             backgroundColor: theme.colors.companionSurface,
             color: theme.colors.companionBerry,
-            icon: Sparkle,
+            icon: CheckCircle,
           }
-        : recorded
+        : predicted && start
           ? {
-              backgroundColor: theme.colors.companionLavenderWash,
-              color: theme.colors.companionLavender,
-              icon: NotePencil,
+              backgroundColor: theme.colors.companionSurface,
+              color: theme.colors.companionBerry,
+              icon: Sparkle,
             }
-          : null;
+          : recorded
+            ? {
+                backgroundColor: theme.colors.companionLavenderWash,
+                color: theme.colors.companionLavender,
+                icon: NotePencil,
+              }
+            : null;
 
   return (
     <Pressable
@@ -127,15 +143,23 @@ function DayCell({
         pressed && styles.dayCellPressed,
       ]}
     >
-      {actual || predicted ? (
+      {actual || draft || predicted ? (
         <View
           style={[
             styles.band,
             start && styles.bandStart,
             end && styles.bandEnd,
-            actual ? styles.actualBand : styles.predictedBand,
-            predicted && start && styles.predictedBandStart,
-            predicted && end && styles.predictedBandEnd,
+            actual
+              ? styles.actualBand
+              : draft
+                ? styles.draftBand
+                : styles.predictedBand,
+            !actual &&
+              !draft &&
+              predicted &&
+              start &&
+              styles.predictedBandStart,
+            !actual && !draft && predicted && end && styles.predictedBandEnd,
           ]}
         />
       ) : null}
@@ -223,6 +247,7 @@ function CalendarHeader({ addMonth, month }: CalendarHeaderProps) {
 
 export function MonthCalendar({
   dailyRecords = [],
+  draftPeriodRange,
   onSelectDate,
   periods = [],
   prediction,
@@ -288,6 +313,7 @@ export function MonthCalendar({
               <DayCell
                 date={date}
                 dailyRecords={dailyRecords}
+                draftPeriodRange={draftPeriodRange}
                 onPress={() => date && onSelectDate(date.dateString)}
                 periods={periods}
                 prediction={prediction}
@@ -424,6 +450,14 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: theme.colors.textSecondary,
+  },
+  draftBand: {
+    backgroundColor: theme.colors.companionCashmere,
+    borderBottomColor: theme.colors.companionBerry,
+    borderBottomWidth: 1.5,
+    borderStyle: 'dashed',
+    borderTopColor: theme.colors.companionBerry,
+    borderTopWidth: 1.5,
   },
   monthButton: {
     alignItems: 'center',

@@ -32,6 +32,10 @@ export default function RecordScreen() {
   const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
+  const [periodDraft, setPeriodDraft] = useState<{
+    endDate: string | null;
+    startDate: string;
+  } | null>(null);
   const {
     dailyRecords,
     periods,
@@ -45,14 +49,15 @@ export default function RecordScreen() {
     return saved ? toDraft(saved) : emptyDraft();
   });
   const selectedPeriod = findPeriodForDate(periods, selectedDate, today);
-  const latestPeriod = [...periods].sort((left, right) =>
-    right.startDate.localeCompare(left.startDate),
-  )[0];
   const periodForEditor =
     periods.find((period) => period.id === editingPeriodId) ??
     selectedPeriod ??
     null;
   const periodActive = Boolean(selectedPeriod);
+  const draftReady = Boolean(
+    periodDraft?.endDate && periodDraft.endDate >= periodDraft.startDate,
+  );
+  const periodButtonPrimary = periodActive || Boolean(periodDraft);
 
   function openSheet(kind: RecordKind) {
     const saved = dailyRecords.find(
@@ -87,15 +92,42 @@ export default function RecordScreen() {
   }
 
   function selectDate(date: string) {
+    setActionError(null);
     setSelectedDate(date);
+    if (periodDraft) setPeriodDraft({ ...periodDraft, endDate: date });
     const saved = dailyRecords.find((record) => record.recordDate === date);
     setDraft(saved ? toDraft(saved) : emptyDraft());
   }
 
   async function togglePeriod() {
     setActionError(null);
+    if (periodDraft) {
+      if (!periodDraft.endDate) return;
+      if (periodDraft.endDate < periodDraft.startDate) {
+        setActionError('结束日期不能早于开始日期，请重新选择结束日');
+        return;
+      }
+      try {
+        await recordPeriod({
+          action: 'start',
+          endDate: periodDraft.endDate,
+          startDate: periodDraft.startDate,
+          timeZone: currentTimeZone(),
+        });
+        setPeriodDraft(null);
+      } catch (error) {
+        setActionError(
+          error instanceof Error ? error.message : '历史经期补录失败',
+        );
+      }
+      return;
+    }
     if (selectedPeriod && selectedPeriod.endDate !== null) {
       openPeriodEditor(selectedPeriod);
+      return;
+    }
+    if (!selectedPeriod && selectedDate < today) {
+      setPeriodDraft({ endDate: null, startDate: selectedDate });
       return;
     }
     try {
@@ -163,6 +195,31 @@ export default function RecordScreen() {
     return `${Number(month)}月${Number(day)}日`;
   }
 
+  function periodCaption() {
+    if (periodDraft) {
+      if (!periodDraft.endDate) {
+        return `${formatShortDate(periodDraft.startDate)} 开始 · 请在日历选择结束日`;
+      }
+      if (periodDraft.endDate < periodDraft.startDate) {
+        return `${formatShortDate(periodDraft.startDate)} 开始 · 结束日不能更早`;
+      }
+      return `${formatShortDate(periodDraft.startDate)} 开始 · ${formatShortDate(periodDraft.endDate)} 结束`;
+    }
+    return selectedPeriod
+      ? selectedPeriod.endDate
+        ? '实际经期记录 · 可调整开始日或结束日'
+        : '经期中 · 记录会用于个人周期分析'
+      : selectedDate < today
+        ? '非经期记录 · 可补录其他 App 中的历史经期'
+        : '非经期记录';
+  }
+
+  function periodButtonLabel() {
+    if (periodDraft) return draftReady ? '确认补录' : '请选择结束日';
+    if (periodActive) return selectedPeriod?.endDate ? '调整经期' : '月经结束';
+    return selectedDate < today ? '补录经期' : '月经来了';
+  }
+
   return (
     <Page>
       <ScrollView
@@ -174,6 +231,18 @@ export default function RecordScreen() {
         <Box paddingTop="m">
           <MonthCalendar
             dailyRecords={dailyRecords}
+            draftPeriodRange={
+              periodDraft
+                ? {
+                    end:
+                      periodDraft.endDate &&
+                      periodDraft.endDate >= periodDraft.startDate
+                        ? periodDraft.endDate
+                        : periodDraft.startDate,
+                    start: periodDraft.startDate,
+                  }
+                : null
+            }
             onSelectDate={selectDate}
             periods={periods}
             prediction={prediction}
@@ -199,38 +268,37 @@ export default function RecordScreen() {
           paddingHorizontal="page"
           style={styles.dateSummary}
         >
-          <Box>
+          <Box flex={1} paddingRight="s">
             <Text style={styles.dateTitle} variant="sectionTitle">
               {selectedDateLabel()}
             </Text>
             <Text style={styles.dateCaption} variant="caption">
-              {selectedPeriod
-                ? selectedPeriod.endDate
-                  ? '实际经期记录 · 可修正边界'
-                  : '经期中 · 记录会用于个人周期分析'
-                : '非经期记录'}
+              {periodCaption()}
             </Text>
-            {latestPeriod ? (
+            {periodDraft ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => openPeriodEditor(latestPeriod)}
-                style={styles.correctLink}
+                onPress={() => {
+                  setPeriodDraft(null);
+                  setActionError(null);
+                }}
+                style={styles.cancelDraft}
               >
-                <Text style={styles.correctLinkText}>
-                  用所选日期修正最近经期
-                </Text>
+                <Text style={styles.cancelDraftText}>取消补录</Text>
               </Pressable>
             ) : null}
           </Box>
           <Pressable
             accessibilityRole="button"
+            disabled={Boolean(periodDraft) && !draftReady}
             onPress={() => void togglePeriod()}
             style={[
               styles.periodButton,
-              !periodActive && styles.periodButtonInactive,
+              !periodButtonPrimary && styles.periodButtonInactive,
+              periodDraft && !draftReady && styles.periodButtonDisabled,
             ]}
           >
-            {periodActive ? (
+            {periodButtonPrimary ? (
               <CheckCircle
                 color={theme.colors.companionSurface}
                 size={18}
@@ -244,14 +312,10 @@ export default function RecordScreen() {
               />
             )}
             <Text
-              style={periodActive ? styles.periodButtonText : undefined}
+              style={periodButtonPrimary ? styles.periodButtonText : undefined}
               variant="label"
             >
-              {periodActive
-                ? selectedPeriod?.endDate
-                  ? '调整经期'
-                  : '月经结束'
-                : '月经来了'}
+              {periodButtonLabel()}
             </Text>
           </Pressable>
         </Box>
@@ -351,16 +415,21 @@ function toDraft(record: DailyRecord): DailyRecordDraft {
   };
 }
 
+function formatShortDate(value: string) {
+  const [, month, day] = value.split('-').map(Number);
+  return `${month}月${day}日`;
+}
+
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 44,
   },
-  correctLink: {
+  cancelDraft: {
     alignSelf: 'flex-start',
-    minHeight: 28,
     justifyContent: 'center',
+    minHeight: 32,
   },
-  correctLinkText: {
+  cancelDraftText: {
     color: theme.colors.companionBerry,
     fontSize: 12,
     fontWeight: '600',
@@ -398,6 +467,9 @@ const styles = StyleSheet.create({
   periodButtonInactive: {
     backgroundColor: theme.colors.companionSurface,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
+  },
+  periodButtonDisabled: {
+    opacity: 0.48,
   },
   periodButtonText: {
     color: theme.colors.companionSurface,
