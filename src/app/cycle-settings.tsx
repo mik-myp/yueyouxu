@@ -1,30 +1,78 @@
-import { useRouter } from 'expo-router';
 import { Minus, Plus } from '@/components/soft-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
 import { Page } from '@/components/page';
+import { PrimaryButton } from '@/components/primary-button';
 import { SettingsDetailHeader } from '@/components/settings-detail-header';
 import { Box, Text, theme } from '@/theme';
 
 export default function CycleSettingsScreen() {
   const router = useRouter();
-  const [cycleLength, setCycleLength] = useState(30);
+  const [automatic, setAutomatic] = useState(true);
+  const [cycleLength, setCycleLength] = useState(28);
   const [periodLength, setPeriodLength] = useState(5);
 
   return (
     <Page>
       <ScrollView contentContainerStyle={styles.content} tabIndex={0}>
-        <SettingsDetailHeader title="周期设置" />
+        <SettingsDetailHeader title="预测设置" />
 
         <Box marginTop="xl">
           <Text marginBottom="s" paddingHorizontal="page" variant="caption">
-            默认周期
+            计算方式
+          </Text>
+          <Box style={styles.methodGroup}>
+            <Box flex={1}>
+              <Text variant="body">自动计算</Text>
+              <Text marginTop="xs" variant="caption">
+                根据完整经期记录更新个人基准
+              </Text>
+            </Box>
+            <Pressable
+              accessibilityLabel={`自动计算预测基准，${automatic ? '已开启' : '已关闭'}`}
+              accessibilityRole="button"
+              onPress={() => setAutomatic((current) => !current)}
+              style={({ pressed }) => [
+                styles.toggle,
+                automatic ? styles.toggleOn : styles.toggleOff,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View
+                style={[styles.toggleThumb, automatic && styles.toggleThumbOn]}
+              />
+            </Pressable>
+          </Box>
+        </Box>
+
+        <Box marginTop="xl">
+          <Text marginBottom="s" paddingHorizontal="page" variant="caption">
+            当前预测基准
+          </Text>
+          <Box style={styles.controlGroup}>
+            <BasisRow
+              label="周期长度"
+              source={automatic ? '最近 4 个完整周期' : '使用固定数值'}
+              value={automatic ? 30 : cycleLength}
+            />
+            <BasisRow
+              isLast
+              label="经期长度"
+              source={automatic ? '最近 4 次经期记录' : '使用固定数值'}
+              value={automatic ? 5 : periodLength}
+            />
+          </Box>
+        </Box>
+
+        <Box marginTop="xl">
+          <Text marginBottom="s" paddingHorizontal="page" variant="caption">
+            {automatic ? '初始参考值' : '固定预测值'}
           </Text>
           <Box style={styles.controlGroup}>
             <NumberControl
-              label="常见周期长度"
+              label="周期长度"
               max={45}
               min={20}
               onChange={setCycleLength}
@@ -32,7 +80,7 @@ export default function CycleSettingsScreen() {
             />
             <NumberControl
               isLast
-              label="常见经期长度"
+              label="经期长度"
               max={10}
               min={2}
               onChange={setPeriodLength}
@@ -44,7 +92,9 @@ export default function CycleSettingsScreen() {
         <Box marginTop="xl" paddingHorizontal="page">
           <Box style={styles.rangeNote}>
             <Text variant="caption">
-              预测会优先使用完整记录；样本不足时使用这里的默认值。
+              {automatic
+                ? '完整记录少于 3 个周期时，使用初始参考值进行预测。'
+                : '关闭自动计算后，预测始终使用固定数值。'}
             </Text>
           </Box>
         </Box>
@@ -65,6 +115,37 @@ type NumberControlProps = {
   onChange: (value: number) => void;
   value: number;
 };
+
+function BasisRow({
+  isLast,
+  label,
+  source,
+  value,
+}: {
+  isLast?: boolean;
+  label: string;
+  source: string;
+  value: number;
+}) {
+  return (
+    <Box
+      alignItems="center"
+      borderBottomColor="companionCashmereStrong"
+      borderBottomWidth={isLast ? 0 : StyleSheet.hairlineWidth}
+      flexDirection="row"
+      minHeight={72}
+      paddingHorizontal="page"
+    >
+      <Box flex={1}>
+        <Text variant="body">{label}</Text>
+        <Text marginTop="xs" variant="caption">
+          {source}
+        </Text>
+      </Box>
+      <Text style={styles.basisValue}>{value} 天</Text>
+    </Box>
+  );
+}
 
 function NumberControl({
   isLast,
@@ -98,7 +179,6 @@ function NumberControl({
         />
         <Box alignItems="center" minWidth={52}>
           <Text style={styles.valueText}>{value}</Text>
-          <Text variant="caption">天</Text>
         </Box>
         <StepButton
           disabled={value >= max}
@@ -144,12 +224,30 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     paddingTop: 16,
   },
+  basisValue: {
+    color: theme.colors.companionInk,
+    fontSize: 17,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '700',
+    lineHeight: 24,
+  },
   controlGroup: {
     backgroundColor: theme.colors.companionSurface,
     borderBottomColor: theme.colors.companionCashmereStrong,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.colors.companionCashmereStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  methodGroup: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.companionSurface,
+    borderBottomColor: theme.colors.companionCashmereStrong,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.companionCashmereStrong,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    minHeight: 78,
+    paddingHorizontal: 20,
   },
   pressed: {
     opacity: 0.65,
@@ -177,6 +275,33 @@ const styles = StyleSheet.create({
   },
   stepButtonDisabled: {
     opacity: 0.35,
+  },
+  toggle: {
+    borderCurve: 'continuous',
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 28,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    width: 52,
+  },
+  toggleOff: {
+    backgroundColor: theme.colors.companionCashmereStrong,
+    borderColor: theme.colors.companionCashmereStrong,
+  },
+  toggleOn: {
+    backgroundColor: theme.colors.companionBerry,
+    borderColor: theme.colors.companionBerry,
+  },
+  toggleThumb: {
+    backgroundColor: theme.colors.companionSurface,
+    borderRadius: 11,
+    boxShadow: `0 2px 4px ${theme.colors.companionShadow}`,
+    height: 22,
+    width: 22,
+  },
+  toggleThumbOn: {
+    alignSelf: 'flex-end',
   },
   valueText: {
     color: theme.colors.companionInk,

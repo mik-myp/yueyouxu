@@ -17,12 +17,12 @@ export default function SettingsScreen() {
   return (
     <Page>
       <ScrollView contentContainerStyle={styles.content} tabIndex={0}>
-        <SettingsSection label="周期默认值">
+        <SettingsSection label="预测与周期">
           <SettingRow
             accent={theme.colors.companionBerry}
-            description="周期 30 天 · 经期 5 天"
+            description="自动计算 · 当前周期基准 30 天"
             icon={SlidersHorizontal}
-            label="周期设置"
+            label="预测设置"
             onPress={() => router.push('/cycle-settings')}
           />
         </SettingsSection>
