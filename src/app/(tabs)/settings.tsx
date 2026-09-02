@@ -9,10 +9,19 @@ import {
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Page } from '@/components/page';
+import { useAppData } from '@/data/app-data-provider';
+import { DEFAULT_PREDICTION_SETTINGS } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { settings } = useAppData();
+  const predictionSettings = settings ?? {
+    ...DEFAULT_PREDICTION_SETTINGS,
+    onboardingCompleted: false,
+    timeZone: 'UTC',
+    updatedAt: '',
+  };
 
   return (
     <Page>
@@ -20,7 +29,7 @@ export default function SettingsScreen() {
         <SettingsSection label="预测与周期">
           <SettingRow
             accent={theme.colors.companionBerry}
-            description="自动计算 · 当前周期基准 30 天"
+            description={`${predictionSettings.automaticCalculation ? '自动计算' : '固定数值'} · 当前周期基准 ${predictionSettings.referenceCycleLength} 天`}
             icon={SlidersHorizontal}
             label="预测设置"
             onPress={() => router.push('/cycle-settings')}

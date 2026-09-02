@@ -5,17 +5,43 @@ import {
   TrashSimple,
   type Icon,
 } from '@/components/soft-icons';
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 
 import { Page } from '@/components/page';
 import { SettingsDetailHeader } from '@/components/settings-detail-header';
+import { useAppData } from '@/data/app-data-provider';
 import { Box, Text, theme } from '@/theme';
 
 export default function PrivacyDataScreen() {
+  const router = useRouter();
+  const { clearAllData } = useAppData();
+
+  function clearAndRestart() {
+    void clearAllData().then(() => router.replace('/onboarding'));
+  }
+
   function confirmClear() {
-    Alert.alert('清除全部数据', '此操作将在数据功能接入后删除本地记录。', [
+    const message = '将永久删除当前设备上的周期、每日记录和分析结果。';
+
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm(`清除全部数据\n\n${message}`)) clearAndRestart();
+      return;
+    }
+
+    Alert.alert('清除全部数据', message, [
       { text: '取消', style: 'cancel' },
-      { text: '清除', style: 'destructive' },
+      {
+        text: '清除',
+        style: 'destructive',
+        onPress: clearAndRestart,
+      },
     ]);
   }
 

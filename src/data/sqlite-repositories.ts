@@ -1,10 +1,18 @@
 import { eq } from 'drizzle-orm';
 
 import type { AppSettings, OnboardingInput } from '@/domain/models';
+import { validatePredictionSettings } from '@/domain/models';
 
 import type { AppDatabase } from './database';
 import type { AppRepositories } from './repositories';
-import { appSettings, periods } from './schema';
+import {
+  analysisSnapshots,
+  appSettings,
+  dailyRecords,
+  dailySymptoms,
+  periods,
+  predictionWindows,
+} from './schema';
 
 function periodId(startDate: string) {
   return `period-${startDate}`;
@@ -14,6 +22,18 @@ export function createSQLiteRepositories(
   database: AppDatabase,
 ): AppRepositories {
   return {
+    dataManagement: {
+      async clearAll() {
+        await database.transaction(async (transaction) => {
+          await transaction.delete(predictionWindows);
+          await transaction.delete(analysisSnapshots);
+          await transaction.delete(dailySymptoms);
+          await transaction.delete(dailyRecords);
+          await transaction.delete(periods);
+          await transaction.delete(appSettings);
+        });
+      },
+    },
     settings: {
       async get(): Promise<AppSettings | null> {
         const row = await database
@@ -32,6 +52,18 @@ export function createSQLiteRepositories(
           timeZone: row.timeZone,
           updatedAt: row.updatedAt,
         };
+      },
+      async savePredictionSettings(settings, updatedAt) {
+        validatePredictionSettings(settings);
+        await database
+          .update(appSettings)
+          .set({
+            automaticCalculation: settings.automaticCalculation,
+            referenceCycleLength: settings.referenceCycleLength,
+            referencePeriodLength: settings.referencePeriodLength,
+            updatedAt,
+          })
+          .where(eq(appSettings.id, 1));
       },
     },
     onboarding: {
