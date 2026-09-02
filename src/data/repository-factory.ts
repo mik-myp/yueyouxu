@@ -1,5 +1,6 @@
 import type { AppSettings, OnboardingInput } from '@/domain/models';
 import { validatePredictionSettings } from '@/domain/models';
+import { parseLocalDate } from '@/domain/local-date';
 
 import type { AppRepositories } from './repositories';
 
@@ -7,18 +8,39 @@ const STORAGE_KEY = 'yueyouxu.web-preview.v1';
 
 type WebPreviewState = {
   lastPeriodStartDate: string | null;
+  periods: {
+    endDate: string | null;
+    id: string;
+    source: 'manual';
+    startDate: string;
+    timeZone: string;
+  }[];
   settings: AppSettings | null;
 };
 
 function readState(): WebPreviewState {
   const serialized = globalThis.localStorage?.getItem(STORAGE_KEY);
-  if (!serialized) return { lastPeriodStartDate: null, settings: null };
+  if (!serialized)
+    return { lastPeriodStartDate: null, periods: [], settings: null };
 
   try {
-    return JSON.parse(serialized) as WebPreviewState;
+    const parsed = JSON.parse(serialized) as Partial<WebPreviewState>;
+    return {
+      lastPeriodStartDate: parsed.lastPeriodStartDate ?? null,
+      periods: parsed.periods ?? [],
+      settings: parsed.settings ?? null,
+    };
   } catch {
-    return { lastPeriodStartDate: null, settings: null };
+    return { lastPeriodStartDate: null, periods: [], settings: null };
   }
+}
+
+function mapPeriod(period: WebPreviewState['periods'][number]) {
+  return {
+    ...period,
+    endDate: period.endDate ? parseLocalDate(period.endDate) : null,
+    startDate: parseLocalDate(period.startDate),
+  };
 }
 
 function writeState(state: WebPreviewState) {
@@ -51,6 +73,15 @@ export async function createAppRepositories(): Promise<AppRepositories> {
         validatePredictionSettings(input);
         writeState({
           lastPeriodStartDate: input.lastPeriodStartDate,
+          periods: [
+            {
+              endDate: null,
+              id: `period-${input.lastPeriodStartDate}`,
+              source: 'manual',
+              startDate: input.lastPeriodStartDate,
+              timeZone: input.timeZone,
+            },
+          ],
           settings: {
             automaticCalculation: input.automaticCalculation,
             onboardingCompleted: true,
@@ -59,6 +90,42 @@ export async function createAppRepositories(): Promise<AppRepositories> {
             timeZone: input.timeZone,
             updatedAt: completedAt,
           },
+        });
+      },
+    },
+    periods: {
+      async get(id) {
+        const period = readState().periods.find((item) => item.id === id);
+        return period ? mapPeriod(period) : null;
+      },
+      async list() {
+        return readState().periods.map(mapPeriod);
+      },
+      async remove(id) {
+        const current = readState();
+        writeState({
+          ...current,
+          periods: current.periods.filter((period) => period.id !== id),
+        });
+      },
+      async save(id, period, updatedAt) {
+        const current = readState();
+        const existing = current.periods.find((item) => item.id === id);
+        const next = {
+          endDate: period.endDate,
+          id,
+          source: 'manual' as const,
+          startDate: period.startDate,
+          timeZone: period.timeZone,
+        };
+        writeState({
+          ...current,
+          periods: existing
+            ? current.periods.map((item) => (item.id === id ? next : item))
+            : [...current.periods, next],
+          settings: current.settings
+            ? { ...current.settings, updatedAt }
+            : current.settings,
         });
       },
     },

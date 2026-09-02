@@ -14,8 +14,9 @@ import { MonthCalendar } from '@/components/month-calendar';
 import { Page } from '@/components/page';
 import { RecordDetailSheet } from '@/components/record-detail-sheet';
 import { RecordRow } from '@/components/record-row';
+import { useAppData } from '@/data/app-data-provider';
+import { currentTimeZone } from '@/domain/local-date';
 import {
-  actualPeriodRange,
   initialDailyRecord,
   prototypeToday,
 } from '@/features/prototype/mock-data';
@@ -27,7 +28,14 @@ export default function RecordScreen() {
   const [selectedDate, setSelectedDate] = useState(prototypeToday);
   const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
   const [draft, setDraft] = useState<DailyRecordDraft>(initialDailyRecord);
-  const [periodActive, setPeriodActive] = useState(true);
+  const { periods, recordPeriod } = useAppData();
+  const [periodActive, setPeriodActive] = useState(() =>
+    periods.some(
+      (period) =>
+        period.startDate <= prototypeToday &&
+        (period.endDate === null || period.endDate >= prototypeToday),
+    ),
+  );
 
   function openSheet(kind: RecordKind) {
     setActiveKind(kind);
@@ -41,8 +49,25 @@ export default function RecordScreen() {
   function selectDate(date: string) {
     setSelectedDate(date);
     setPeriodActive(
-      date >= actualPeriodRange.start && date <= actualPeriodRange.end,
+      periods.some(
+        (period) =>
+          period.startDate <= date &&
+          (period.endDate === null || period.endDate >= date),
+      ),
     );
+  }
+
+  async function togglePeriod() {
+    try {
+      await recordPeriod({
+        action: periodActive ? 'end' : 'start',
+        startDate: selectedDate,
+        timeZone: currentTimeZone(),
+      });
+      setPeriodActive((current) => !current);
+    } catch {
+      // The next batch will add inline errors to record actions.
+    }
   }
 
   function selectedDateLabel() {
@@ -83,7 +108,7 @@ export default function RecordScreen() {
           </Box>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setPeriodActive((current) => !current)}
+            onPress={() => void togglePeriod()}
             style={[
               styles.periodButton,
               !periodActive && styles.periodButtonInactive,

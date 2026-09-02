@@ -1,6 +1,11 @@
 import { eq } from 'drizzle-orm';
 
-import type { AppSettings, OnboardingInput } from '@/domain/models';
+import type {
+  AppSettings,
+  OnboardingInput,
+  PeriodUpdate,
+} from '@/domain/models';
+import { parseLocalDate } from '@/domain/local-date';
 import { validatePredictionSettings } from '@/domain/models';
 
 import type { AppDatabase } from './database';
@@ -16,6 +21,16 @@ import {
 
 function periodId(startDate: string) {
   return `period-${startDate}`;
+}
+
+function mapPeriod(row: typeof periods.$inferSelect) {
+  return {
+    endDate: row.endDate ? parseLocalDate(row.endDate) : null,
+    id: row.id,
+    source: 'manual' as const,
+    startDate: parseLocalDate(row.startDate),
+    timeZone: row.timeZone,
+  };
 }
 
 export function createSQLiteRepositories(
@@ -106,6 +121,45 @@ export function createSQLiteRepositories(
             })
             .onConflictDoNothing({ target: periods.startDate });
         });
+      },
+    },
+    periods: {
+      async get(id) {
+        const row = await database
+          .select()
+          .from(periods)
+          .where(eq(periods.id, id))
+          .get();
+        return row ? mapPeriod(row) : null;
+      },
+      async list() {
+        const rows = await database.select().from(periods);
+        return rows.map(mapPeriod);
+      },
+      async remove(id) {
+        await database.delete(periods).where(eq(periods.id, id));
+      },
+      async save(id, period: PeriodUpdate, updatedAt) {
+        await database
+          .insert(periods)
+          .values({
+            createdAt: updatedAt,
+            endDate: period.endDate,
+            id,
+            source: 'manual',
+            startDate: period.startDate,
+            timeZone: period.timeZone,
+            updatedAt,
+          })
+          .onConflictDoUpdate({
+            target: periods.id,
+            set: {
+              endDate: period.endDate,
+              startDate: period.startDate,
+              timeZone: period.timeZone,
+              updatedAt,
+            },
+          });
       },
     },
   };

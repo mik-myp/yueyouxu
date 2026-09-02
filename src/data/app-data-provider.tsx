@@ -12,8 +12,12 @@ import {
   type CompleteOnboardingCommand,
 } from '@/application/complete-onboarding';
 import { createSavePredictionSettings } from '@/application/save-prediction-settings';
+import {
+  createRecordPeriod,
+  type RecordPeriodCommand,
+} from '@/application/record-period';
 import type { AppRepositories } from '@/data/repositories';
-import type { AppSettings, PredictionSettings } from '@/domain/models';
+import type { AppSettings, Period, PredictionSettings } from '@/domain/models';
 
 import { createAppRepositories } from './repository-factory';
 
@@ -24,6 +28,9 @@ type AppDataContextValue = {
   loading: boolean;
   refresh(): Promise<void>;
   savePredictionSettings(settings: PredictionSettings): Promise<void>;
+  recordPeriod(command: RecordPeriodCommand): Promise<Period>;
+  undoPeriod(periodId: string, wasStart: boolean): Promise<void>;
+  periods: Period[];
   settings: AppSettings | null;
 };
 
@@ -34,12 +41,14 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     null,
   );
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadSettings = useCallback(
     async (nextRepositories: AppRepositories) => {
       setSettings(await nextRepositories.settings.get());
+      setPeriods(await nextRepositories.periods.list());
     },
     [],
   );
@@ -51,9 +60,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       try {
         const nextRepositories = await createAppRepositories();
         const nextSettings = await nextRepositories.settings.get();
+        const nextPeriods = await nextRepositories.periods.list();
         if (!active) return;
         setRepositories(nextRepositories);
         setSettings(nextSettings);
+        setPeriods(nextPeriods);
       } catch (bootstrapError) {
         if (!active) return;
         setError(
@@ -108,6 +119,41 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     [loadSettings, requireRepositories],
   );
 
+  const recordPeriod = useCallback(
+    async (command: RecordPeriodCommand) => {
+      const currentRepositories = requireRepositories();
+      const period = await createRecordPeriod(currentRepositories.periods)(
+        command,
+      );
+      setPeriods(await currentRepositories.periods.list());
+      return period;
+    },
+    [requireRepositories],
+  );
+
+  const undoPeriod = useCallback(
+    async (periodId: string, wasStart: boolean) => {
+      const currentRepositories = requireRepositories();
+      if (wasStart) {
+        await currentRepositories.periods.remove(periodId);
+      } else {
+        const period = await currentRepositories.periods.get(periodId);
+        if (!period) return;
+        await currentRepositories.periods.save(
+          periodId,
+          {
+            endDate: null,
+            startDate: period.startDate,
+            timeZone: period.timeZone,
+          },
+          new Date().toISOString(),
+        );
+      }
+      setPeriods(await currentRepositories.periods.list());
+    },
+    [requireRepositories],
+  );
+
   return (
     <AppDataContext.Provider
       value={{
@@ -117,6 +163,9 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         loading,
         refresh,
         savePredictionSettings,
+        recordPeriod,
+        undoPeriod,
+        periods,
         settings,
       }}
     >

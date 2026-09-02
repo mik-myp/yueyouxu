@@ -20,6 +20,12 @@ export type Period = {
   timeZone: string;
 };
 
+export type PeriodUpdate = {
+  endDate: LocalDate | null;
+  startDate: LocalDate;
+  timeZone: string;
+};
+
 export type OnboardingInput = PredictionSettings & {
   lastPeriodStartDate: LocalDate;
   timeZone: string;
