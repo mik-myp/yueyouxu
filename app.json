@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Yueyouxu",
+    "name": "月有序",
     "slug": "yueyouxu",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.mikmyp.yueyouxu",
+      "versionCode": 1,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -27,6 +28,7 @@
           }
         }
       ],
+      "./plugins/with-android-release-signing",
       "expo-sqlite"
     ],
     "experiments": {

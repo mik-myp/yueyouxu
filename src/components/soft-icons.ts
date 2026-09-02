@@ -1,4 +1,5 @@
 export { ArrowRightIcon as ArrowRight } from 'phosphor-react-native/src/icons/ArrowRight';
+export { ArrowClockwiseIcon as ArrowClockwise } from 'phosphor-react-native/src/icons/ArrowClockwise';
 export { CalendarHeartIcon as CalendarHeart } from 'phosphor-react-native/src/icons/CalendarHeart';
 export { CalendarPlusIcon as CalendarPlus } from 'phosphor-react-native/src/icons/CalendarPlus';
 export { CalendarDotsIcon as CalendarDots } from 'phosphor-react-native/src/icons/CalendarDots';
@@ -11,7 +12,9 @@ export { ClipboardTextIcon as ClipboardText } from 'phosphor-react-native/src/ic
 export { DatabaseIcon as Database } from 'phosphor-react-native/src/icons/Database';
 export { DeviceMobileIcon as DeviceMobile } from 'phosphor-react-native/src/icons/DeviceMobile';
 export { DropIcon as Drop } from 'phosphor-react-native/src/icons/Drop';
+export { DownloadSimpleIcon as DownloadSimple } from 'phosphor-react-native/src/icons/DownloadSimple';
 export { GearSixIcon as GearSix } from 'phosphor-react-native/src/icons/GearSix';
+export { GithubLogoIcon as GithubLogo } from 'phosphor-react-native/src/icons/GithubLogo';
 export { HeartIcon as Heart } from 'phosphor-react-native/src/icons/Heart';
 export { HeartbeatIcon as Heartbeat } from 'phosphor-react-native/src/icons/Heartbeat';
 export { InfoIcon as Info } from 'phosphor-react-native/src/icons/Info';

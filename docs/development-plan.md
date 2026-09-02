@@ -234,6 +234,27 @@
 - 批次 4 前：确认预测范围和置信等级的计算口径。
 - 批次 5 前：确认趋势指标的定义和展示口径。
 
+## 批次 7：Android GitHub Release
+
+状态：功能实现完成，等待签名 APK 与 Android 真机发布验收；结果参见 [批次 7 Android GitHub Release 结果](./batch-7-result.md)。
+
+分支：`batch/7-android-github-release`
+
+### 范围
+
+- 只为 Android 提供 GitHub Release 签名 APK，不接入 Google Play。
+- 在关于页提供手动检查更新与手动下载入口。
+- 只读取公开 Release 元数据，不后台轮询、不自动下载、不静默安装。
+- 建立 APK 构建、版本递增、签名保管、Release 命名和覆盖升级规范。
+- 使用版本标签触发 GitHub Actions，自动构建签名 APK、生成摘要并创建 Release。
+
+### 验收
+
+- 版本比较、无 Release、无 APK、请求失败和发现新版本均有确定结果。
+- 下载动作只打开当前 GitHub 仓库的 HTTPS Release APK。
+- Android APK 可首次安装，并可使用同一签名覆盖旧版且保留本地 SQLite 数据。
+- iOS 不显示 Android 更新入口，也不新增 IPA 分发逻辑。
+
 ## Git 工作流
 
 每个批次使用独立分支，分支在开发开始前创建：

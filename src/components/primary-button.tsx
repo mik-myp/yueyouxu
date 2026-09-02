@@ -4,6 +4,7 @@ import type { Icon } from '@/components/soft-icons';
 import { Box, Text, theme } from '@/theme';
 
 type PrimaryButtonProps = {
+  disabled?: boolean;
   icon?: Icon;
   label: string;
   onPress: () => void;
@@ -11,6 +12,7 @@ type PrimaryButtonProps = {
 };
 
 export function PrimaryButton({
+  disabled = false,
   icon: Icon,
   label,
   onPress,
@@ -20,11 +22,14 @@ export function PrimaryButton({
 
   return (
     <Pressable
+      accessibilityState={{ disabled }}
       accessibilityRole="button"
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         primary ? styles.primary : styles.neutral,
+        disabled && styles.disabled,
         pressed && styles.pressed,
       ]}
     >
@@ -57,6 +62,9 @@ const styles = StyleSheet.create({
     height: 54,
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  disabled: {
+    opacity: 0.52,
   },
   label: {
     fontSize: 16,
