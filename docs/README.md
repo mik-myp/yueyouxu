@@ -12,6 +12,7 @@
 - [批次 1 UI 原型结果](./batch-1-result.md)：页面、交互原型、视觉验收和后续边界。
 - [批次 1.5 Soft Companion 视觉验证结果](./batch-1.5-result.md)：限定范围的视觉实现、截图矩阵、自动检查和真机验收入口。
 - [批次 1.6 Soft Companion 全局视觉推广结果](./batch-1.6-result.md)：全部现有页面、共享组件和记录面板的视觉推广、交互验证与截图矩阵。
+- [批次 2 数据基础与首次初始化](./batch-2-result.md)：SQLite 数据模型、Repository、初始化流程和本地恢复。
 - [架构草案](./architecture.md)：Expo、React Native、Restyle、本地数据、分析算法和可选 AI 服务。
 - [讨论记录](./discussion-log.md)：按日期追加已确认事项、提案和待决问题。
 
