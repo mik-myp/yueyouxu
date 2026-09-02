@@ -19,7 +19,11 @@ import {
   type PeriodEditAction,
 } from '@/components/period-detail-sheet';
 import { useAppData } from '@/data/app-data-provider';
-import { currentTimeZone, formatLocalDate } from '@/domain/local-date';
+import {
+  addLocalDays,
+  currentTimeZone,
+  formatLocalDate,
+} from '@/domain/local-date';
 import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
 import type { DailyRecord, Period } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
@@ -32,10 +36,6 @@ export default function RecordScreen() {
   const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
-  const [periodDraft, setPeriodDraft] = useState<{
-    endDate: string | null;
-    startDate: string;
-  } | null>(null);
   const {
     dailyRecords,
     periods,
@@ -43,21 +43,32 @@ export default function RecordScreen() {
     recordPeriod,
     removePeriod,
     saveDailyRecord,
+    settings,
   } = useAppData();
   const [draft, setDraft] = useState<DailyRecordDraft>(() => {
     const saved = dailyRecords.find((record) => record.recordDate === today);
     return saved ? toDraft(saved) : emptyDraft();
   });
-  const selectedPeriod = findPeriodForDate(periods, selectedDate, today);
+  const selectedPeriod = findPeriodForDate(periods, selectedDate);
   const periodForEditor =
     periods.find((period) => period.id === editingPeriodId) ??
     selectedPeriod ??
     null;
   const periodActive = Boolean(selectedPeriod);
-  const draftReady = Boolean(
-    periodDraft?.endDate && periodDraft.endDate >= periodDraft.startDate,
+  const referencePeriodLength = settings?.referencePeriodLength ?? 5;
+  const openPeriod = [...periods]
+    .filter((period) => period.endDate === null && period.startDate <= today)
+    .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
+  const estimatedPeriodRange = openPeriod
+    ? {
+        end: addLocalDays(openPeriod.startDate, referencePeriodLength - 1),
+        start: addLocalDays(openPeriod.startDate, 1),
+      }
+    : null;
+  const canEndOpenPeriod = Boolean(
+    openPeriod && selectedDate >= openPeriod.startDate && !selectedPeriod,
   );
-  const periodButtonPrimary = periodActive || Boolean(periodDraft);
+  const periodButtonPrimary = periodActive || canEndOpenPeriod;
 
   function openSheet(kind: RecordKind) {
     const saved = dailyRecords.find(
@@ -94,45 +105,25 @@ export default function RecordScreen() {
   function selectDate(date: string) {
     setActionError(null);
     setSelectedDate(date);
-    if (periodDraft) setPeriodDraft({ ...periodDraft, endDate: date });
     const saved = dailyRecords.find((record) => record.recordDate === date);
     setDraft(saved ? toDraft(saved) : emptyDraft());
   }
 
   async function togglePeriod() {
     setActionError(null);
-    if (periodDraft) {
-      if (!periodDraft.endDate) return;
-      if (periodDraft.endDate < periodDraft.startDate) {
-        setActionError('结束日期不能早于开始日期，请重新选择结束日');
-        return;
-      }
-      try {
-        await recordPeriod({
-          action: 'start',
-          endDate: periodDraft.endDate,
-          startDate: periodDraft.startDate,
-          timeZone: currentTimeZone(),
-        });
-        setPeriodDraft(null);
-      } catch (error) {
-        setActionError(
-          error instanceof Error ? error.message : '历史经期补录失败',
-        );
-      }
-      return;
-    }
     if (selectedPeriod && selectedPeriod.endDate !== null) {
       openPeriodEditor(selectedPeriod);
       return;
     }
-    if (!selectedPeriod && selectedDate < today) {
-      setPeriodDraft({ endDate: null, startDate: selectedDate });
+    if (openPeriod && selectedDate < openPeriod.startDate) {
+      setActionError(
+        `请先为 ${formatShortDate(openPeriod.startDate)} 的经期选择月经走了日期`,
+      );
       return;
     }
     try {
       await recordPeriod({
-        action: selectedPeriod ? 'end' : 'start',
+        action: openPeriod ? 'end' : 'start',
         startDate: selectedDate,
         timeZone: currentTimeZone(),
       });
@@ -196,28 +187,28 @@ export default function RecordScreen() {
   }
 
   function periodCaption() {
-    if (periodDraft) {
-      if (!periodDraft.endDate) {
-        return `${formatShortDate(periodDraft.startDate)} 开始 · 请在日历选择结束日`;
-      }
-      if (periodDraft.endDate < periodDraft.startDate) {
-        return `${formatShortDate(periodDraft.startDate)} 开始 · 结束日不能更早`;
-      }
-      return `${formatShortDate(periodDraft.startDate)} 开始 · ${formatShortDate(periodDraft.endDate)} 结束`;
+    if (selectedPeriod?.endDate) {
+      return '实际经期记录 · 可调整开始日或结束日';
     }
-    return selectedPeriod
-      ? selectedPeriod.endDate
-        ? '实际经期记录 · 可调整开始日或结束日'
-        : '经期中 · 记录会用于个人周期分析'
-      : selectedDate < today
-        ? '非经期记录 · 可补录其他 App 中的历史经期'
-        : '非经期记录';
+    if (selectedPeriod && estimatedPeriodRange) {
+      return `已标记月经来了 · 预计至 ${formatShortDate(estimatedPeriodRange.end)}`;
+    }
+    if (openPeriod) {
+      return selectedDate >= openPeriod.startDate
+        ? `${formatShortDate(openPeriod.startDate)} 月经来了 · 当前选择为走了日期`
+        : `${formatShortDate(openPeriod.startDate)} 已标记月经来了 · 请先完成本次经期`;
+    }
+    return selectedDate < today ? '非经期记录 · 可标记月经来了' : '非经期记录';
   }
 
   function periodButtonLabel() {
-    if (periodDraft) return draftReady ? '确认补录' : '请选择结束日';
-    if (periodActive) return selectedPeriod?.endDate ? '调整经期' : '月经结束';
-    return selectedDate < today ? '补录经期' : '月经来了';
+    if (selectedPeriod?.endDate) return '调整经期';
+    if (openPeriod) {
+      return selectedDate >= openPeriod.startDate
+        ? '月经走了'
+        : '先完成本次经期';
+    }
+    return '月经来了';
   }
 
   return (
@@ -231,18 +222,7 @@ export default function RecordScreen() {
         <Box paddingTop="m">
           <MonthCalendar
             dailyRecords={dailyRecords}
-            draftPeriodRange={
-              periodDraft
-                ? {
-                    end:
-                      periodDraft.endDate &&
-                      periodDraft.endDate >= periodDraft.startDate
-                        ? periodDraft.endDate
-                        : periodDraft.startDate,
-                    start: periodDraft.startDate,
-                  }
-                : null
-            }
+            estimatedPeriodRange={estimatedPeriodRange}
             onSelectDate={selectDate}
             periods={periods}
             prediction={prediction}
@@ -275,27 +255,19 @@ export default function RecordScreen() {
             <Text style={styles.dateCaption} variant="caption">
               {periodCaption()}
             </Text>
-            {periodDraft ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  setPeriodDraft(null);
-                  setActionError(null);
-                }}
-                style={styles.cancelDraft}
-              >
-                <Text style={styles.cancelDraftText}>取消补录</Text>
-              </Pressable>
-            ) : null}
           </Box>
           <Pressable
             accessibilityRole="button"
-            disabled={Boolean(periodDraft) && !draftReady}
+            disabled={
+              Boolean(openPeriod) && selectedDate < openPeriod.startDate
+            }
             onPress={() => void togglePeriod()}
             style={[
               styles.periodButton,
               !periodButtonPrimary && styles.periodButtonInactive,
-              periodDraft && !draftReady && styles.periodButtonDisabled,
+              openPeriod &&
+                selectedDate < openPeriod.startDate &&
+                styles.periodButtonDisabled,
             ]}
           >
             {periodButtonPrimary ? (
@@ -389,14 +361,12 @@ export default function RecordScreen() {
 
 type DailyRecordPeriod = Period;
 
-function findPeriodForDate(
-  periods: DailyRecordPeriod[],
-  date: string,
-  today: string,
-) {
+function findPeriodForDate(periods: DailyRecordPeriod[], date: string) {
   return (
     periods.find(
-      (period) => period.startDate <= date && (period.endDate ?? today) >= date,
+      (period) =>
+        period.startDate <= date &&
+        (period.endDate ? period.endDate >= date : period.startDate === date),
     ) ?? null
   );
 }
@@ -423,16 +393,6 @@ function formatShortDate(value: string) {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 44,
-  },
-  cancelDraft: {
-    alignSelf: 'flex-start',
-    justifyContent: 'center',
-    minHeight: 32,
-  },
-  cancelDraftText: {
-    color: theme.colors.companionBerry,
-    fontSize: 12,
-    fontWeight: '600',
   },
   dateCaption: {
     color: theme.colors.textSecondary,

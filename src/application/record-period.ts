@@ -55,22 +55,41 @@ export function createRecordPeriod(
           right.startDate.localeCompare(left.startDate),
         )[0];
       if (!openPeriod) throw new Error('没有可结束的进行中经期');
+      const completedPeriod: PeriodUpdate = {
+        endDate: startDate,
+        startDate: openPeriod.startDate,
+        timeZone: command.timeZone,
+      };
+      const conflict = existingPeriods.some(
+        (period) =>
+          period.id !== openPeriod.id && overlaps(completedPeriod, period),
+      );
+      if (conflict) {
+        throw new Error('月经来了到月经走了之间存在另一段经期，请调整日期');
+      }
       await repository.save(
         openPeriod.id,
-        {
-          endDate: startDate,
-          startDate: openPeriod.startDate,
-          timeZone: command.timeZone,
-        },
+        completedPeriod,
         now().toISOString(),
       );
       return { ...openPeriod, endDate: startDate, timeZone: command.timeZone };
     }
 
+    if (
+      command.action === 'start' &&
+      endDate === null &&
+      existingPeriods.some((period) => period.endDate === null)
+    ) {
+      throw new Error('请先记录已有经期的月经走了日期');
+    }
+    const rangeForConflict =
+      command.action === 'start' && endDate === null
+        ? { ...next, endDate: startDate }
+        : next;
     const conflict = existingPeriods.some((period) => {
       const correctingSelf =
         command.action === 'correct' && period.id === command.periodId;
-      return !correctingSelf && overlaps(next, period);
+      return !correctingSelf && overlaps(rangeForConflict, period);
     });
     if (conflict) {
       throw new Error('所选日期范围与已有经期重叠，请调整开始日或结束日');

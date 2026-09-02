@@ -99,6 +99,7 @@ describe('record period', () => {
     await expect(
       record({
         action: 'start',
+        endDate: '2026-09-03',
         startDate: '2026-09-01',
         timeZone: 'Asia/Shanghai',
       }),
@@ -141,5 +142,108 @@ describe('record period', () => {
       startDate: '2026-08-01',
     });
     expect(await repositories.list()).toHaveLength(2);
+  });
+
+  it('keeps nearby user-defined periods as two independent records', async () => {
+    const repositories = repository();
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-02',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'start',
+      startDate: '2026-09-04',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-06',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toMatchObject([
+      { endDate: '2026-09-02', startDate: '2026-09-01' },
+      { endDate: '2026-09-06', startDate: '2026-09-04' },
+    ]);
+  });
+
+  it('persists a historical start event before a newer closed period', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-06'),
+        id: 'period-2026-09-04',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-04'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    const started = await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    expect(started.endDate).toBeNull();
+
+    const ended = await record({
+      action: 'end',
+      startDate: '2026-09-02',
+      timeZone: 'Asia/Shanghai',
+    });
+    expect(ended).toMatchObject({
+      endDate: '2026-09-02',
+      startDate: '2026-09-01',
+    });
+  });
+
+  it('rejects a second open period and an end event crossing another period', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-06'),
+        id: 'period-2026-09-04',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-04'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-10T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await expect(
+      record({
+        action: 'start',
+        startDate: '2026-09-03',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('请先记录已有经期的月经走了日期');
+    await expect(
+      record({
+        action: 'end',
+        startDate: '2026-09-05',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('存在另一段经期');
   });
 });

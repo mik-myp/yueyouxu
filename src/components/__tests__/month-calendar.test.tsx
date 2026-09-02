@@ -40,4 +40,24 @@ describe('MonthCalendar', () => {
 
     expect(onSelectDate).toHaveBeenCalledWith('2026-09-10');
   });
+
+  it('labels the estimated period before an end date is selected', async () => {
+    await render(
+      <ThemeProvider theme={theme}>
+        <MonthCalendar
+          estimatedPeriodRange={{
+            end: '2026-09-05',
+            start: '2026-09-02',
+          }}
+          onSelectDate={jest.fn()}
+          selectedDate={prototypeToday}
+          today="2026-09-30"
+        />
+      </ThemeProvider>,
+    );
+
+    expect(
+      screen.getByRole('button', { name: '9月3日，预计经期' }),
+    ).toBeTruthy();
+  });
 });

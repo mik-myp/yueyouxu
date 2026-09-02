@@ -113,7 +113,7 @@ export default function TodayScreen() {
         <Box gap="m" marginTop="l" paddingHorizontal="page">
           <PrimaryButton
             icon={periodActive ? Heart : CalendarPlus}
-            label={periodActive ? '月经结束' : '月经来了'}
+            label={periodActive ? '月经走了' : '月经来了'}
             onPress={() => void togglePeriod()}
           />
           {periodActive ? (
@@ -189,7 +189,7 @@ export default function TodayScreen() {
             style={styles.toast}
           >
             <Text style={styles.toastText}>
-              {periodActive ? '已标记月经开始' : '已标记月经结束'}
+              {periodActive ? '已标记月经开始' : '已标记月经走了'}
             </Text>
             <Pressable
               accessibilityRole="button"
