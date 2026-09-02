@@ -8,13 +8,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
-  ArrowLineDown,
-  ArrowLineUp,
   CaretLeft,
   CaretRight,
   CheckCircle,
+  ClipboardText,
   Drop,
-  ListChecks,
+  Flag,
+  FlagCheckered,
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
@@ -119,7 +119,7 @@ function DayCell({
       ? {
           backgroundColor: theme.colors.companionSurface,
           color: theme.colors.companionBerry,
-          icon: ArrowLineDown,
+          icon: Flag,
           key: 'period-start',
         }
       : null,
@@ -127,7 +127,7 @@ function DayCell({
       ? {
           backgroundColor: theme.colors.companionSurface,
           color: theme.colors.companionBerry,
-          icon: ArrowLineUp,
+          icon: FlagCheckered,
           key: 'period-end',
         }
       : null,
@@ -137,7 +137,7 @@ function DayCell({
             ? theme.colors.companionSurface
             : theme.colors.companionLavenderWash,
           color: theme.colors.companionLavender,
-          icon: ListChecks,
+          icon: ClipboardText,
           key: 'daily-record',
         }
       : null,
@@ -201,6 +201,7 @@ function DayCell({
         >
           {date.day}
         </Text>
+        <View style={styles.markerSpacer} />
       </View>
     </Pressable>
   );
@@ -217,7 +218,7 @@ function DayStatusMarker({
 }) {
   return (
     <View style={[styles.statusMarker, { backgroundColor }]}>
-      <StatusIcon color={color} size={9} weight="bold" />
+      <StatusIcon color={color} size={10} weight="bold" />
     </View>
   );
 }
@@ -378,19 +379,19 @@ export function MonthCalendar({
         <LegendItem
           backgroundColor={theme.colors.companionSurface}
           color={theme.colors.companionBerry}
-          icon={ArrowLineDown}
+          icon={Flag}
           label="月经来了"
         />
         <LegendItem
           backgroundColor={theme.colors.companionSurface}
           color={theme.colors.companionBerry}
-          icon={ArrowLineUp}
+          icon={FlagCheckered}
           label="月经走了"
         />
         <LegendItem
           backgroundColor={theme.colors.companionLavenderWash}
           color={theme.colors.companionLavender}
-          icon={ListChecks}
+          icon={ClipboardText}
           label="已记录"
         />
       </View>
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
     color: theme.colors.surface,
     fontSize: 15,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   band: {
     bottom: 2,
@@ -472,13 +473,13 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     height: 40,
     justifyContent: 'center',
-    width: 38,
+    width: 40,
   },
   dayText: {
     color: theme.colors.textPrimary,
     fontSize: 14,
     fontVariant: ['tabular-nums'],
-    lineHeight: 20,
+    lineHeight: 18,
   },
   disabledText: {
     color: theme.colors.textSecondary,
@@ -559,9 +560,12 @@ const styles = StyleSheet.create({
   markerRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 1,
+    gap: 2,
     height: 11,
     justifyContent: 'center',
+  },
+  markerSpacer: {
+    height: 11,
   },
   selected: {
     backgroundColor: theme.colors.companionCashmere,
@@ -575,10 +579,10 @@ const styles = StyleSheet.create({
   },
   statusMarker: {
     alignItems: 'center',
-    borderRadius: 5,
-    height: 10,
+    borderRadius: 4,
+    height: 11,
     justifyContent: 'center',
-    width: 10,
+    width: 11,
   },
   today: {
     borderColor: theme.colors.companionBerry,
