@@ -1,18 +1,93 @@
 import { Minus, Plus } from '@/components/soft-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
 import { SettingsDetailHeader } from '@/components/settings-detail-header';
+import { SoftToggle } from '@/components/soft-toggle';
+import { useAppData } from '@/data/app-data-provider';
+import type { AppSettings, PredictionSettings } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
 
 export default function CycleSettingsScreen() {
   const router = useRouter();
-  const [automatic, setAutomatic] = useState(true);
-  const [cycleLength, setCycleLength] = useState(28);
-  const [periodLength, setPeriodLength] = useState(5);
+  const { error, loading, savePredictionSettings, settings } = useAppData();
+
+  if (loading) {
+    return (
+      <Page>
+        <Box alignItems="center" flex={1} justifyContent="center">
+          <Text variant="caption">正在读取周期设置…</Text>
+        </Box>
+      </Page>
+    );
+  }
+
+  if (error) {
+    return (
+      <Page>
+        <Box
+          alignItems="center"
+          flex={1}
+          justifyContent="center"
+          padding="page"
+        >
+          <Text textAlign="center">{error}</Text>
+        </Box>
+      </Page>
+    );
+  }
+
+  if (!settings) return <Redirect href="/onboarding" />;
+
+  return (
+    <CycleSettingsForm
+      initialSettings={settings}
+      onSave={savePredictionSettings}
+      onSaved={() => router.back()}
+    />
+  );
+}
+
+function CycleSettingsForm({
+  initialSettings,
+  onSave,
+  onSaved,
+}: {
+  initialSettings: AppSettings;
+  onSave: (settings: PredictionSettings) => Promise<void>;
+  onSaved: () => void;
+}) {
+  const [automatic, setAutomatic] = useState(
+    initialSettings.automaticCalculation,
+  );
+  const [cycleLength, setCycleLength] = useState(
+    initialSettings.referenceCycleLength,
+  );
+  const [periodLength, setPeriodLength] = useState(
+    initialSettings.referencePeriodLength,
+  );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave({
+        automaticCalculation: automatic,
+        referenceCycleLength: cycleLength,
+        referencePeriodLength: periodLength,
+      });
+      onSaved();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : '设置保存失败');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Page>
@@ -30,20 +105,11 @@ export default function CycleSettingsScreen() {
                 根据完整经期记录更新个人基准
               </Text>
             </Box>
-            <Pressable
-              accessibilityLabel={`自动计算预测基准，${automatic ? '已开启' : '已关闭'}`}
-              accessibilityRole="button"
-              onPress={() => setAutomatic((current) => !current)}
-              style={({ pressed }) => [
-                styles.toggle,
-                automatic ? styles.toggleOn : styles.toggleOff,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View
-                style={[styles.toggleThumb, automatic && styles.toggleThumbOn]}
-              />
-            </Pressable>
+            <SoftToggle
+              accessibilityLabel="自动计算预测基准"
+              onChange={setAutomatic}
+              value={automatic}
+            />
           </Box>
         </Box>
 
@@ -54,14 +120,18 @@ export default function CycleSettingsScreen() {
           <Box style={styles.controlGroup}>
             <BasisRow
               label="周期长度"
-              source={automatic ? '最近 4 个完整周期' : '使用固定数值'}
-              value={automatic ? 30 : cycleLength}
+              source={
+                automatic ? '完整记录不足，使用初始参考值' : '使用固定数值'
+              }
+              value={cycleLength}
             />
             <BasisRow
               isLast
               label="经期长度"
-              source={automatic ? '最近 4 次经期记录' : '使用固定数值'}
-              value={automatic ? 5 : periodLength}
+              source={
+                automatic ? '完整记录不足，使用初始参考值' : '使用固定数值'
+              }
+              value={periodLength}
             />
           </Box>
         </Box>
@@ -100,7 +170,13 @@ export default function CycleSettingsScreen() {
         </Box>
 
         <Box marginTop="xxl" paddingHorizontal="page">
-          <PrimaryButton label="保存设置" onPress={() => router.back()} />
+          {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
+          <Box marginTop={saveError ? 'm' : 'none'}>
+            <PrimaryButton
+              label={saving ? '正在保存…' : '保存设置'}
+              onPress={() => void save()}
+            />
+          </Box>
         </Box>
       </ScrollView>
     </Page>
@@ -238,6 +314,11 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.companionCashmereStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  errorText: {
+    color: theme.colors.periodAction,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   methodGroup: {
     alignItems: 'center',
     backgroundColor: theme.colors.companionSurface,
@@ -275,33 +356,6 @@ const styles = StyleSheet.create({
   },
   stepButtonDisabled: {
     opacity: 0.35,
-  },
-  toggle: {
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 28,
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    width: 52,
-  },
-  toggleOff: {
-    backgroundColor: theme.colors.companionCashmereStrong,
-    borderColor: theme.colors.companionCashmereStrong,
-  },
-  toggleOn: {
-    backgroundColor: theme.colors.companionBerry,
-    borderColor: theme.colors.companionBerry,
-  },
-  toggleThumb: {
-    backgroundColor: theme.colors.companionSurface,
-    borderRadius: 11,
-    boxShadow: `0 2px 4px ${theme.colors.companionShadow}`,
-    height: 22,
-    width: 22,
-  },
-  toggleThumbOn: {
-    alignSelf: 'flex-end',
   },
   valueText: {
     color: theme.colors.companionInk,
