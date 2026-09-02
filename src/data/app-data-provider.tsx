@@ -21,6 +21,7 @@ import {
   type SaveDailyRecordCommand,
 } from '@/application/save-daily-record';
 import { calculatePrediction } from '@/domain/prediction';
+import { analyzeTrackingData } from '@/domain/cycle-analysis';
 import type { AppRepositories } from '@/data/repositories';
 import type {
   AppSettings,
@@ -42,6 +43,7 @@ type AppDataContextValue = {
   removePeriod(periodId: string): Promise<void>;
   saveDailyRecord(command: SaveDailyRecordCommand): Promise<DailyRecord>;
   dailyRecords: DailyRecord[];
+  analysis: ReturnType<typeof analyzeTrackingData>;
   prediction: ReturnType<typeof calculatePrediction>;
   undoPeriod(periodId: string, wasStart: boolean): Promise<void>;
   periods: Period[];
@@ -57,6 +59,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [dailyRecords, setDailyRecords] = useState<DailyRecord[]>([]);
+  const analysis = analyzeTrackingData(periods, dailyRecords);
   const prediction = settings ? calculatePrediction(periods, settings) : null;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -198,6 +201,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
   return (
     <AppDataContext.Provider
       value={{
+        analysis,
         clearAllData,
         completeOnboarding,
         error,

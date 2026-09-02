@@ -15,7 +15,8 @@
 - [批次 2 数据基础与首次初始化](./batch-2-result.md)：SQLite 数据模型、Repository、初始化流程和本地恢复。
 - [批次 3 完整记录流程](./batch-3-result.md)：经期事实、开始/结束操作和日期冲突规则。
 - [v0.1 完整功能交付结果](./v0.1-result.md)：每日记录、经期修正、确定性预测、趋势、隐私闭环和最终验证范围。
-- [架构草案](./architecture.md)：Expo、React Native、Restyle、本地数据、分析算法和可选 AI 服务。
+- [架构草案](./architecture.md)：Expo、React Native、Restyle、本地数据与确定性分析算法。
+- [v0.1 周期分析口径](./analysis-method.md)：样本筛选、中位数、MAD、预测置信度与每日观察的可追溯定义。
 - [讨论记录](./discussion-log.md)：按日期追加已确认事项、提案和待决问题。
 
 ## 记录约定

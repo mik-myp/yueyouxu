@@ -18,18 +18,9 @@ export function createSaveDailyRecord(
     if (!command.record.timeZone.trim()) throw new Error('记录时区不能为空');
     const record = {
       ...command.record,
-      note: command.record.note?.trim() || null,
       symptoms: [...new Set(command.record.symptoms)],
     };
-    if (record.note && record.note.length > 200) {
-      throw new Error('备注不能超过 200 字');
-    }
-    const empty =
-      !record.flow &&
-      !record.mood &&
-      !record.note &&
-      !record.pain &&
-      record.symptoms.length === 0;
+    const empty = !record.flow && !record.pain && record.symptoms.length === 0;
     if (empty) await repository.remove(command.recordDate);
     else await repository.save(command.recordDate, record, now().toISOString());
     return {

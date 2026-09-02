@@ -1,12 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import {
-  CheckCircle,
-  Drop,
-  Heartbeat,
-  NotePencil,
-  Smiley,
-  Sparkle,
-} from '@/components/soft-icons';
+import { CheckCircle, Drop, Heartbeat, Sparkle } from '@/components/soft-icons';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
@@ -55,7 +48,8 @@ export default function RecordScreen() {
     selectedPeriod ??
     null;
   const periodActive = Boolean(selectedPeriod);
-  const referencePeriodLength = settings?.referencePeriodLength ?? 5;
+  const referencePeriodLength =
+    prediction?.periodLength ?? settings?.referencePeriodLength ?? 5;
   const openPeriodForSelectedDate = [...periods]
     .filter(
       (period) => period.endDate === null && period.startDate <= selectedDate,
@@ -89,8 +83,6 @@ export default function RecordScreen() {
     void saveDailyRecord({
       record: {
         flow: nextDraft.flow || null,
-        mood: nextDraft.mood || null,
-        note: nextDraft.note || null,
         pain: nextDraft.pain || null,
         symptoms: nextDraft.symptoms,
         timeZone: currentTimeZone(),
@@ -303,24 +295,10 @@ export default function RecordScreen() {
           <RecordRow
             accent={theme.colors.companionLavender}
             icon={Sparkle}
+            isLast
             label="症状"
             onPress={() => openSheet('symptoms')}
             value={draft.symptoms.length ? draft.symptoms.join('、') : '未记录'}
-          />
-          <RecordRow
-            accent={theme.colors.companionSage}
-            icon={Smiley}
-            label="心情"
-            onPress={() => openSheet('mood')}
-            value={draft.mood || '未记录'}
-          />
-          <RecordRow
-            accent={theme.colors.textMuted}
-            icon={NotePencil}
-            isLast
-            label="备注"
-            onPress={() => openSheet('note')}
-            value={draft.note || '未记录'}
           />
         </Box>
       </ScrollView>
@@ -383,14 +361,12 @@ function getEstimatedPeriodRanges(
 }
 
 function emptyDraft(): DailyRecordDraft {
-  return { flow: '', mood: '', note: '', pain: '', symptoms: [] };
+  return { flow: '', pain: '', symptoms: [] };
 }
 
 function toDraft(record: DailyRecord): DailyRecordDraft {
   return {
     flow: record.flow ?? '',
-    mood: record.mood ?? '',
-    note: record.note ?? '',
     pain: record.pain ?? '',
     symptoms: record.symptoms,
   };

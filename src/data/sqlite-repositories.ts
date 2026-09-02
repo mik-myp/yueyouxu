@@ -41,8 +41,6 @@ function mapDailyRecord(
   return {
     flow: row.flow,
     id: row.id,
-    mood: row.mood,
-    note: row.note,
     pain: row.pain,
     recordDate: parseLocalDate(row.recordDate),
     symptoms,
@@ -98,8 +96,6 @@ export function createSQLiteRepositories(
               createdAt: updatedAt,
               flow: record.flow,
               id,
-              mood: record.mood,
-              note: record.note,
               pain: record.pain,
               recordDate,
               timeZone: record.timeZone,
@@ -109,8 +105,6 @@ export function createSQLiteRepositories(
               target: dailyRecords.recordDate,
               set: {
                 flow: record.flow,
-                mood: record.mood,
-                note: record.note,
                 pain: record.pain,
                 timeZone: record.timeZone,
                 updatedAt,

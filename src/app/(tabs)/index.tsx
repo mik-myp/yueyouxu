@@ -105,7 +105,9 @@ export default function TodayScreen() {
             cycleDay={cycleDay}
             cycleLength={cycleLength}
             periodActive={periodActive}
-            periodLength={settings?.referencePeriodLength ?? 5}
+            periodLength={
+              prediction?.periodLength ?? settings?.referencePeriodLength ?? 5
+            }
             predictionLabel={predictionLabel}
           />
         </Box>
@@ -211,8 +213,6 @@ function countRecordFields(
         flow: string | null;
         pain: string | null;
         symptoms: string[];
-        mood: string | null;
-        note: string | null;
       }
     | undefined,
 ) {
@@ -220,8 +220,6 @@ function countRecordFields(
   return [
     record.flow,
     record.pain,
-    record.mood,
-    record.note,
     record.symptoms.length ? record.symptoms : null,
   ].filter(Boolean).length;
 }

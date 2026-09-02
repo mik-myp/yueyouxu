@@ -39,7 +39,7 @@ export default function SettingsScreen() {
         <SettingsSection label="隐私与数据">
           <SettingRow
             accent={theme.colors.companionSage}
-            description="本地优先 · AI 未启用"
+            description="数据只保存在当前设备"
             icon={ShieldCheck}
             label="数据管理"
             onPress={() => router.push('/privacy-data')}

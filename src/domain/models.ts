@@ -29,8 +29,6 @@ export type PeriodUpdate = {
 export type DailyRecord = {
   flow: string | null;
   id: string;
-  mood: string | null;
-  note: string | null;
   pain: string | null;
   recordDate: LocalDate;
   symptoms: string[];
@@ -44,6 +42,7 @@ export type PredictionWindow = {
   centerDate: LocalDate;
   earliestDate: LocalDate;
   latestDate: LocalDate;
+  periodLength: number;
   sampleCount: number;
 };
 

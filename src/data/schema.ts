@@ -44,8 +44,6 @@ export const dailyRecords = sqliteTable(
     recordDate: text('record_date').notNull().unique(),
     flow: text('flow'),
     pain: text('pain'),
-    mood: text('mood'),
-    note: text('note'),
     timeZone: text('time_zone').notNull(),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
@@ -60,7 +58,6 @@ export const dailySymptoms = sqliteTable(
       .notNull()
       .references(() => dailyRecords.id, { onDelete: 'cascade' }),
     symptomCode: text('symptom_code').notNull(),
-    severity: integer('severity'),
   },
   (table) => [
     primaryKey({ columns: [table.dailyRecordId, table.symptomCode] }),

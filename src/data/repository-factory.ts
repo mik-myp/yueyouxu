@@ -10,8 +10,6 @@ type WebPreviewState = {
   dailyRecords: {
     flow: string | null;
     id: string;
-    mood: string | null;
-    note: string | null;
     pain: string | null;
     recordDate: string;
     symptoms: string[];
