@@ -115,14 +115,14 @@ function DayCell({
   const markers = [
     actualPeriod && key === actualPeriod.startDate
       ? {
-          color: theme.colors.companionMint,
+          color: theme.colors.companionButter,
           icon: Play,
           key: 'period-start',
         }
       : null,
     actualPeriod?.endDate === key
       ? {
-          color: theme.colors.companionMint,
+          color: theme.colors.companionButter,
           icon: Pause,
           key: 'period-end',
         }
@@ -130,8 +130,8 @@ function DayCell({
     recorded
       ? {
           color: actual
-            ? theme.colors.companionMint
-            : theme.colors.companionSage,
+            ? theme.colors.companionButter
+            : theme.colors.companionOchre,
           icon: ClipboardText,
           key: 'daily-record',
         }
@@ -211,7 +211,7 @@ function DayStatusMarker({
 }) {
   return (
     <View style={styles.statusMarker}>
-      <StatusIcon color={color} size={12} weight="fill" />
+      <StatusIcon color={color} size={11} weight="fill" />
     </View>
   );
 }
@@ -383,17 +383,17 @@ export function MonthCalendar({
           label="已选择"
         />
         <LegendItem
-          color={theme.colors.companionSage}
+          color={theme.colors.companionOchre}
           icon={Play}
           label="月经来了"
         />
         <LegendItem
-          color={theme.colors.companionSage}
+          color={theme.colors.companionOchre}
           icon={Pause}
           label="月经走了"
         />
         <LegendItem
-          color={theme.colors.companionSage}
+          color={theme.colors.companionOchre}
           icon={ClipboardText}
           label="已记录"
         />
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     color: theme.colors.surface,
     fontSize: 15,
     fontWeight: '600',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   band: {
     bottom: 2,
@@ -478,15 +478,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderCurve: 'continuous',
     borderRadius: 17,
-    height: 42,
+    height: 44,
     justifyContent: 'center',
-    width: 42,
+    width: 44,
   },
   dayText: {
     color: theme.colors.textPrimary,
     fontSize: 14,
     fontVariant: ['tabular-nums'],
-    lineHeight: 18,
+    lineHeight: 16,
   },
   disabledText: {
     color: theme.colors.textSecondary,
@@ -568,11 +568,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 2,
-    height: 12,
+    height: 14,
     justifyContent: 'center',
+    paddingTop: 3,
   },
   markerSpacer: {
-    height: 12,
+    height: 14,
   },
   selected: {
     backgroundColor: theme.colors.companionCashmere,
@@ -586,9 +587,9 @@ const styles = StyleSheet.create({
   },
   statusMarker: {
     alignItems: 'center',
-    height: 12,
+    height: 11,
     justifyContent: 'center',
-    width: 12,
+    width: 11,
   },
   today: {
     borderColor: theme.colors.companionBerry,
