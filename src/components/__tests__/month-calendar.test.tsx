@@ -21,8 +21,8 @@ jest.mock('@/components/soft-icons', () => ({
   CheckCircle: 'CheckCircle',
   ClipboardText: 'ClipboardText',
   Drop: 'Drop',
-  Flag: 'Flag',
-  FlagCheckered: 'FlagCheckered',
+  Pause: 'Pause',
+  Play: 'Play',
   Sparkle: 'Sparkle',
 }));
 

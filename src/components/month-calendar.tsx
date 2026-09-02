@@ -13,8 +13,8 @@ import {
   CheckCircle,
   ClipboardText,
   Drop,
-  Flag,
-  FlagCheckered,
+  Pause,
+  Play,
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
@@ -115,26 +115,23 @@ function DayCell({
   const markers = [
     actualPeriod && key === actualPeriod.startDate
       ? {
-          backgroundColor: theme.colors.companionSurface,
-          color: theme.colors.companionBerry,
-          icon: Flag,
+          color: theme.colors.companionMint,
+          icon: Play,
           key: 'period-start',
         }
       : null,
     actualPeriod?.endDate === key
       ? {
-          backgroundColor: theme.colors.companionSurface,
-          color: theme.colors.companionBerry,
-          icon: FlagCheckered,
+          color: theme.colors.companionMint,
+          icon: Pause,
           key: 'period-end',
         }
       : null,
     recorded
       ? {
-          backgroundColor: actual
-            ? theme.colors.companionSurface
-            : theme.colors.companionLavenderWash,
-          color: theme.colors.companionLavender,
+          color: actual
+            ? theme.colors.companionMint
+            : theme.colors.companionSage,
           icon: ClipboardText,
           key: 'daily-record',
         }
@@ -206,17 +203,15 @@ function DayCell({
 }
 
 function DayStatusMarker({
-  backgroundColor,
   color,
   icon: StatusIcon,
 }: {
-  backgroundColor: string;
   color: string;
   icon: Icon;
 }) {
   return (
-    <View style={[styles.statusMarker, { backgroundColor }]}>
-      <StatusIcon color={color} size={10} weight="bold" />
+    <View style={styles.statusMarker}>
+      <StatusIcon color={color} size={12} weight="fill" />
     </View>
   );
 }
@@ -388,20 +383,17 @@ export function MonthCalendar({
           label="已选择"
         />
         <LegendItem
-          backgroundColor={theme.colors.companionSurface}
-          color={theme.colors.companionBerry}
-          icon={Flag}
+          color={theme.colors.companionSage}
+          icon={Play}
           label="月经来了"
         />
         <LegendItem
-          backgroundColor={theme.colors.companionSurface}
-          color={theme.colors.companionBerry}
-          icon={FlagCheckered}
+          color={theme.colors.companionSage}
+          icon={Pause}
           label="月经走了"
         />
         <LegendItem
-          backgroundColor={theme.colors.companionLavenderWash}
-          color={theme.colors.companionLavender}
+          color={theme.colors.companionSage}
           icon={ClipboardText}
           label="已记录"
         />
@@ -416,15 +408,19 @@ function LegendItem({
   icon: LegendIcon,
   label,
 }: {
-  backgroundColor: string;
+  backgroundColor?: string;
   color: string;
   icon: Icon;
   label: string;
 }) {
   return (
     <View style={styles.legendItem}>
-      <View style={[styles.legendIcon, { backgroundColor }]}>
-        <LegendIcon color={color} size={12} weight="duotone" />
+      <View style={[styles.legendIcon, backgroundColor && { backgroundColor }]}>
+        <LegendIcon
+          color={color}
+          size={12}
+          weight={backgroundColor ? 'duotone' : 'fill'}
+        />
       </View>
       <Text style={styles.legendText}>{label}</Text>
     </View>
@@ -482,9 +478,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderCurve: 'continuous',
     borderRadius: 17,
-    height: 40,
+    height: 42,
     justifyContent: 'center',
-    width: 40,
+    width: 42,
   },
   dayText: {
     color: theme.colors.textPrimary,
@@ -572,11 +568,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 2,
-    height: 11,
+    height: 12,
     justifyContent: 'center',
   },
   markerSpacer: {
-    height: 11,
+    height: 12,
   },
   selected: {
     backgroundColor: theme.colors.companionCashmere,
@@ -590,10 +586,9 @@ const styles = StyleSheet.create({
   },
   statusMarker: {
     alignItems: 'center',
-    borderRadius: 4,
-    height: 11,
+    height: 12,
     justifyContent: 'center',
-    width: 11,
+    width: 12,
   },
   today: {
     borderColor: theme.colors.companionBerry,

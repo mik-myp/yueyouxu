@@ -11,8 +11,6 @@ export { ClipboardTextIcon as ClipboardText } from 'phosphor-react-native/src/ic
 export { DatabaseIcon as Database } from 'phosphor-react-native/src/icons/Database';
 export { DeviceMobileIcon as DeviceMobile } from 'phosphor-react-native/src/icons/DeviceMobile';
 export { DropIcon as Drop } from 'phosphor-react-native/src/icons/Drop';
-export { FlagIcon as Flag } from 'phosphor-react-native/src/icons/Flag';
-export { FlagCheckeredIcon as FlagCheckered } from 'phosphor-react-native/src/icons/FlagCheckered';
 export { GearSixIcon as GearSix } from 'phosphor-react-native/src/icons/GearSix';
 export { HeartIcon as Heart } from 'phosphor-react-native/src/icons/Heart';
 export { HeartbeatIcon as Heartbeat } from 'phosphor-react-native/src/icons/Heartbeat';
@@ -20,6 +18,8 @@ export { InfoIcon as Info } from 'phosphor-react-native/src/icons/Info';
 export { LockSimpleIcon as LockSimple } from 'phosphor-react-native/src/icons/LockSimple';
 export { MinusIcon as Minus } from 'phosphor-react-native/src/icons/Minus';
 export { MoonStarsIcon as MoonStars } from 'phosphor-react-native/src/icons/MoonStars';
+export { PauseIcon as Pause } from 'phosphor-react-native/src/icons/Pause';
+export { PlayIcon as Play } from 'phosphor-react-native/src/icons/Play';
 export { PlusIcon as Plus } from 'phosphor-react-native/src/icons/Plus';
 export { SparkleIcon as Sparkle } from 'phosphor-react-native/src/icons/Sparkle';
 export { ShieldCheckIcon as ShieldCheck } from 'phosphor-react-native/src/icons/ShieldCheck';
