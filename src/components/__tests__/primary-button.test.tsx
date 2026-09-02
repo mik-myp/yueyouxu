@@ -17,4 +17,20 @@ describe('PrimaryButton', () => {
 
     expect(onPress).toHaveBeenCalledTimes(1);
   });
+
+  it('does not run its command while disabled', async () => {
+    const onPress = jest.fn();
+    await render(
+      <ThemeProvider theme={theme}>
+        <PrimaryButton disabled label="正在检查…" onPress={onPress} />
+      </ThemeProvider>,
+    );
+
+    await fireEvent.press(screen.getByRole('button'));
+
+    expect(screen.getByRole('button').props.accessibilityState).toEqual({
+      disabled: true,
+    });
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });

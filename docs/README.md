@@ -17,6 +17,8 @@
 - [v0.1 完整功能交付结果](./v0.1-result.md)：每日记录、经期修正、确定性预测、趋势、隐私闭环和最终验证范围。
 - [架构草案](./architecture.md)：Expo、React Native、Restyle、本地数据与确定性分析算法。
 - [v0.1 周期分析口径](./analysis-method.md)：样本筛选、中位数、MAD、预测置信度与每日观察的可追溯定义。
+- [Android GitHub Release 发布与更新](./android-github-release.md)：签名 APK、版本约定、手动检查下载和站外分发验证。
+- [批次 7 Android GitHub Release 结果](./batch-7-result.md)：更新功能、构建配置、验证结果与首发前置条件。
 - [讨论记录](./discussion-log.md)：按日期追加已确认事项、提案和待决问题。
 
 ## 记录约定

@@ -1,0 +1,14 @@
+{
+  "cli": {
+    "appVersionSource": "local",
+    "version": ">= 16.28.0"
+  },
+  "build": {
+    "github": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal"
+    }
+  }
+}
