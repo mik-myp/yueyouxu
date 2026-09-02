@@ -26,6 +26,27 @@ export type PeriodUpdate = {
   timeZone: string;
 };
 
+export type DailyRecord = {
+  flow: string | null;
+  id: string;
+  mood: string | null;
+  note: string | null;
+  pain: string | null;
+  recordDate: LocalDate;
+  symptoms: string[];
+  timeZone: string;
+};
+
+export type DailyRecordUpdate = Omit<DailyRecord, 'id' | 'recordDate'>;
+
+export type PredictionWindow = {
+  confidence: 'low' | 'medium' | 'high';
+  centerDate: LocalDate;
+  earliestDate: LocalDate;
+  latestDate: LocalDate;
+  sampleCount: number;
+};
+
 export type OnboardingInput = PredictionSettings & {
   lastPeriodStartDate: LocalDate;
   timeZone: string;

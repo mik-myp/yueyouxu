@@ -97,6 +97,7 @@ type RecordDetailSheetProps = {
   activeKind: RecordKind | null;
   draft: DailyRecordDraft;
   onChange: (draft: DailyRecordDraft) => void;
+  onConfirm: (draft: DailyRecordDraft) => void;
   onClose: () => void;
   onDismiss: () => void;
 };
@@ -105,7 +106,7 @@ export const RecordDetailSheet = forwardRef<
   BottomSheetModal,
   RecordDetailSheetProps
 >(function RecordDetailSheet(
-  { activeKind, draft, onChange, onClose, onDismiss },
+  { activeKind, draft, onChange, onConfirm, onClose, onDismiss },
   ref,
 ) {
   const [pendingDraft, setPendingDraft] = useState(draft);
@@ -151,7 +152,9 @@ export const RecordDetailSheet = forwardRef<
 
   function confirmChanges() {
     Keyboard.dismiss();
-    onChange({ ...pendingDraft, note: pendingDraft.note.trim() });
+    const nextDraft = { ...pendingDraft, note: pendingDraft.note.trim() };
+    onChange(nextDraft);
+    onConfirm(nextDraft);
     requestAnimationFrame(onClose);
   }
 

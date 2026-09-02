@@ -31,3 +31,19 @@ export function formatLocalDate(date: Date): LocalDate {
     ).padStart(2, '0')}`,
   );
 }
+
+export function differenceInLocalDays(from: LocalDate, to: LocalDate) {
+  const fromTime = Date.parse(`${from}T00:00:00Z`);
+  const toTime = Date.parse(`${to}T00:00:00Z`);
+  return Math.round((toTime - fromTime) / 86400000);
+}
+
+export function addLocalDays(value: LocalDate, amount: number): LocalDate {
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + amount));
+  return parseLocalDate(
+    `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
+      date.getUTCDate(),
+    ).padStart(2, '0')}`,
+  );
+}

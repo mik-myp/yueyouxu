@@ -16,17 +16,17 @@ import {
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
-import {
-  actualPeriodRange,
-  predictedPeriodRange,
-  prototypeToday,
-  recordedDates,
-} from '@/features/prototype/mock-data';
+import { formatLocalDate } from '@/domain/local-date';
+import type { DailyRecord, Period, PredictionWindow } from '@/domain/models';
 import { Text, theme } from '@/theme';
 
 type MonthCalendarProps = {
+  dailyRecords?: DailyRecord[];
   onSelectDate: (date: string) => void;
+  periods?: Period[];
+  prediction?: PredictionWindow | null;
   selectedDate: string;
+  today?: string;
 };
 
 type DayCellProps = {
@@ -50,22 +50,41 @@ function inRange(date: string, start: string, end: string) {
   return date >= start && date <= end;
 }
 
-function DayCell({ date, onPress, selected, state }: DayCellProps) {
+function DayCell({
+  date,
+  onPress,
+  selected,
+  state,
+  periods,
+  dailyRecords,
+  prediction,
+  today,
+}: DayCellProps & {
+  periods: Period[];
+  dailyRecords: DailyRecord[];
+  prediction?: PredictionWindow | null;
+  today: string;
+}) {
   if (!date) return null;
 
   const key = date.dateString;
-  const actual = inRange(key, actualPeriodRange.start, actualPeriodRange.end);
-  const predicted = inRange(
-    key,
-    predictedPeriodRange.start,
-    predictedPeriodRange.end,
+  const actualPeriod = periods.find((period) =>
+    inRange(key, period.startDate, period.endDate ?? today),
   );
-  const range = actual ? actualPeriodRange : predictedPeriodRange;
-  const start = key === range.start;
-  const end = key === range.end;
+  const actual = Boolean(actualPeriod);
+  const predicted = Boolean(
+    prediction && inRange(key, prediction.earliestDate, prediction.latestDate),
+  );
+  const range = actualPeriod
+    ? { start: actualPeriod.startDate, end: actualPeriod.endDate ?? today }
+    : prediction
+      ? { start: prediction.earliestDate, end: prediction.latestDate }
+      : null;
+  const start = Boolean(range && key === range.start);
+  const end = Boolean(range && key === range.end);
   const disabled = state === 'disabled';
-  const recorded = recordedDates.has(key);
-  const isToday = key === prototypeToday;
+  const recorded = dailyRecords.some((record) => record.recordDate === key);
+  const isToday = key === today;
   const statusLabel = [
     actual && '实际经期',
     predicted && '预测经期',
@@ -101,6 +120,7 @@ function DayCell({ date, onPress, selected, state }: DayCellProps) {
       }`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.dayCell,
@@ -202,11 +222,15 @@ function CalendarHeader({ addMonth, month }: CalendarHeaderProps) {
 }
 
 export function MonthCalendar({
+  dailyRecords = [],
   onSelectDate,
+  periods = [],
+  prediction,
   selectedDate,
+  today = formatLocalDate(new Date()),
 }: MonthCalendarProps) {
   const reduceMotion = useReducedMotion();
-  const [visibleMonth, setVisibleMonth] = useState(prototypeToday);
+  const [visibleMonth, setVisibleMonth] = useState(selectedDate);
   const [direction, setDirection] = useState(0);
 
   const showMonth = useCallback((amount: number) => {
@@ -263,13 +287,18 @@ export function MonthCalendar({
             dayComponent={({ date, state }) => (
               <DayCell
                 date={date}
+                dailyRecords={dailyRecords}
                 onPress={() => date && onSelectDate(date.dateString)}
+                periods={periods}
+                prediction={prediction}
                 selected={date?.dateString === selectedDate}
                 state={state}
+                today={today}
               />
             )}
             firstDay={0}
             hideExtraDays={false}
+            maxDate={today}
             onMonthChange={handleMonthChange}
             style={styles.calendar}
             theme={{

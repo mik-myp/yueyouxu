@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import type {
   AppSettings,
+  DailyRecordUpdate,
   OnboardingInput,
   PeriodUpdate,
 } from '@/domain/models';
@@ -33,10 +34,103 @@ function mapPeriod(row: typeof periods.$inferSelect) {
   };
 }
 
+function mapDailyRecord(
+  row: typeof dailyRecords.$inferSelect,
+  symptoms: string[],
+) {
+  return {
+    flow: row.flow,
+    id: row.id,
+    mood: row.mood,
+    note: row.note,
+    pain: row.pain,
+    recordDate: parseLocalDate(row.recordDate),
+    symptoms,
+    timeZone: row.timeZone,
+  };
+}
+
 export function createSQLiteRepositories(
   database: AppDatabase,
 ): AppRepositories {
   return {
+    dailyRecords: {
+      async get(recordDate) {
+        const row = await database
+          .select()
+          .from(dailyRecords)
+          .where(eq(dailyRecords.recordDate, recordDate))
+          .get();
+        if (!row) return null;
+        const symptomRows = await database
+          .select()
+          .from(dailySymptoms)
+          .where(eq(dailySymptoms.dailyRecordId, row.id));
+        return mapDailyRecord(
+          row,
+          symptomRows.map((item) => item.symptomCode),
+        );
+      },
+      async list() {
+        const rows = await database.select().from(dailyRecords);
+        const symptomRows = await database.select().from(dailySymptoms);
+        const symptomsByRecord = new Map<string, string[]>();
+        for (const item of symptomRows) {
+          const values = symptomsByRecord.get(item.dailyRecordId) ?? [];
+          values.push(item.symptomCode);
+          symptomsByRecord.set(item.dailyRecordId, values);
+        }
+        return rows.map((row) =>
+          mapDailyRecord(row, symptomsByRecord.get(row.id) ?? []),
+        );
+      },
+      async remove(recordDate) {
+        await database
+          .delete(dailyRecords)
+          .where(eq(dailyRecords.recordDate, recordDate));
+      },
+      async save(recordDate, record: DailyRecordUpdate, updatedAt) {
+        const id = `daily-${recordDate}`;
+        await database.transaction(async (transaction) => {
+          await transaction
+            .insert(dailyRecords)
+            .values({
+              createdAt: updatedAt,
+              flow: record.flow,
+              id,
+              mood: record.mood,
+              note: record.note,
+              pain: record.pain,
+              recordDate,
+              timeZone: record.timeZone,
+              updatedAt,
+            })
+            .onConflictDoUpdate({
+              target: dailyRecords.recordDate,
+              set: {
+                flow: record.flow,
+                mood: record.mood,
+                note: record.note,
+                pain: record.pain,
+                timeZone: record.timeZone,
+                updatedAt,
+              },
+            });
+          await transaction
+            .delete(dailySymptoms)
+            .where(eq(dailySymptoms.dailyRecordId, id));
+          if (record.symptoms.length) {
+            await transaction.insert(dailySymptoms).values(
+              record.symptoms.map((symptomCode) => ({
+                dailyRecordId: id,
+                severity: null,
+                symptomCode,
+              })),
+            );
+          }
+        });
+      },
+    },
     dataManagement: {
       async clearAll() {
         await database.transaction(async (transaction) => {

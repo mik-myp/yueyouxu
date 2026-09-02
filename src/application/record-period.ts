@@ -1,5 +1,5 @@
 import type { PeriodRepository } from '@/data/repositories';
-import { parseLocalDate } from '@/domain/local-date';
+import { formatLocalDate, parseLocalDate } from '@/domain/local-date';
 import type { PeriodUpdate } from '@/domain/models';
 
 export type RecordPeriodCommand = {
@@ -23,13 +23,24 @@ export function createRecordPeriod(
   return async (command: RecordPeriodCommand) => {
     const startDate = parseLocalDate(command.startDate);
     const endDate = command.endDate ? parseLocalDate(command.endDate) : null;
+    const today = formatLocalDate(now());
+    if (startDate > today || (endDate && endDate > today)) {
+      throw new Error('不能记录未来日期');
+    }
     if (!command.timeZone.trim()) throw new Error('记录时区不能为空');
     if (endDate && endDate < startDate) {
       throw new Error('经期结束日期不能早于开始日期');
     }
 
     const existingPeriods = await repository.list();
-    const id = command.periodId ?? `period-${startDate}`;
+    if (command.action === 'correct') {
+      if (!command.periodId) throw new Error('缺少要修正的经期记录');
+      if (!existingPeriods.some((period) => period.id === command.periodId)) {
+        throw new Error('要修正的经期记录不存在');
+      }
+    }
+    const id =
+      command.action === 'correct' ? command.periodId! : `period-${startDate}`;
     const next: PeriodUpdate = {
       endDate,
       startDate,
@@ -56,9 +67,11 @@ export function createRecordPeriod(
       return { ...openPeriod, endDate: startDate, timeZone: command.timeZone };
     }
 
-    const conflict = existingPeriods.some(
-      (period) => period.id !== id && overlaps(next, period),
-    );
+    const conflict = existingPeriods.some((period) => {
+      const correctingSelf =
+        command.action === 'correct' && period.id === command.periodId;
+      return !correctingSelf && overlaps(next, period);
+    });
     if (conflict) throw new Error('日期与已有经期重叠，请先修正已有记录');
 
     await repository.save(id, next, now().toISOString());

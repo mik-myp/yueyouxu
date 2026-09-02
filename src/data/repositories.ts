@@ -1,5 +1,7 @@
 import type {
   AppSettings,
+  DailyRecord,
+  DailyRecordUpdate,
   OnboardingInput,
   Period,
   PeriodUpdate,
@@ -25,12 +27,24 @@ export interface PeriodRepository {
   save(id: string, period: PeriodUpdate, updatedAt: string): Promise<void>;
 }
 
+export interface DailyRecordRepository {
+  get(recordDate: string): Promise<DailyRecord | null>;
+  list(): Promise<DailyRecord[]>;
+  remove(recordDate: string): Promise<void>;
+  save(
+    recordDate: string,
+    record: DailyRecordUpdate,
+    updatedAt: string,
+  ): Promise<void>;
+}
+
 export interface DataManagementRepository {
   clearAll(): Promise<void>;
 }
 
 export type AppRepositories = {
   dataManagement: DataManagementRepository;
+  dailyRecords: DailyRecordRepository;
   onboarding: OnboardingRepository;
   periods: PeriodRepository;
   settings: SettingsRepository;

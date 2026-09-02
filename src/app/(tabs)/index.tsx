@@ -16,23 +16,45 @@ import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
 import { SectionHeading } from '@/components/section-heading';
 import { useAppData } from '@/data/app-data-provider';
-import { currentTimeZone } from '@/domain/local-date';
+import {
+  currentTimeZone,
+  differenceInLocalDays,
+  formatLocalDate,
+} from '@/domain/local-date';
 import { Box, Text, theme } from '@/theme';
-import { prototypeToday } from '@/features/prototype/mock-data';
 
 export default function TodayScreen() {
+  const today = formatLocalDate(new Date());
   const router = useRouter();
-  const { periods, recordPeriod, undoPeriod } = useAppData();
-  const activePeriod = periods
-    .filter((period) => period.startDate <= prototypeToday)
-    .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
-  const [periodActive, setPeriodActive] = useState(
-    Boolean(activePeriod && activePeriod.endDate === null),
+  const {
+    dailyRecords,
+    periods,
+    prediction,
+    recordPeriod,
+    settings,
+    undoPeriod,
+  } = useAppData();
+  const todayRecord = dailyRecords.find(
+    (record) => record.recordDate === today,
   );
+  const activePeriod = periods
+    .filter((period) => period.startDate <= today)
+    .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
+  const periodActive = Boolean(activePeriod && activePeriod.endDate === null);
   const [lastAction, setLastAction] = useState<{
     id: string;
     wasStart: boolean;
   } | null>(null);
+  const cycleDay = activePeriod
+    ? differenceInLocalDays(activePeriod.startDate, today) + 1
+    : 1;
+  const cycleLength =
+    activePeriod && prediction
+      ? differenceInLocalDays(activePeriod.startDate, prediction.centerDate)
+      : (settings?.referenceCycleLength ?? 28);
+  const predictionLabel = prediction
+    ? `${formatShortDate(prediction.earliestDate)}～${formatShortDate(prediction.latestDate)}`
+    : undefined;
   const [toastVisible, setToastVisible] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,10 +70,9 @@ export default function TodayScreen() {
     try {
       const period = await recordPeriod({
         action: wasActive ? 'end' : 'start',
-        startDate: prototypeToday,
+        startDate: today,
         timeZone: currentTimeZone(),
       });
-      setPeriodActive(!wasActive);
       setLastAction({ id: period.id, wasStart: !wasActive });
       setToastVisible(true);
     } catch {
@@ -64,7 +85,6 @@ export default function TodayScreen() {
   async function undoPeriodAction() {
     if (!lastAction) return;
     await undoPeriod(lastAction.id, lastAction.wasStart);
-    setPeriodActive((current) => !current);
     setToastVisible(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }
@@ -77,11 +97,17 @@ export default function TodayScreen() {
         tabIndex={0}
       >
         <Box paddingHorizontal="page" paddingTop="m">
-          <Text style={styles.dateLine}>2026年9月1日 · 星期二</Text>
+          <Text style={styles.dateLine}>{formatFullDate(today)}</Text>
         </Box>
 
         <Box marginTop="s" paddingHorizontal="s">
-          <CycleArc />
+          <CycleArc
+            cycleDay={cycleDay}
+            cycleLength={cycleLength}
+            periodActive={periodActive}
+            periodLength={settings?.referencePeriodLength ?? 5}
+            predictionLabel={predictionLabel}
+          />
         </Box>
 
         <Box gap="m" marginTop="l" paddingHorizontal="page">
@@ -102,7 +128,10 @@ export default function TodayScreen() {
 
         <Box marginTop="xxl" gap="m">
           <Box paddingHorizontal="page">
-            <SectionHeading action="已记录 3 项" title="今天的记录" />
+            <SectionHeading
+              action={`已记录 ${countRecordFields(todayRecord)} 项`}
+              title="今天的记录"
+            />
           </Box>
           <Box
             backgroundColor="companionSurface"
@@ -115,19 +144,19 @@ export default function TodayScreen() {
               accent={theme.colors.companionBerry}
               icon={Drop}
               label="流量"
-              value="中量"
+              value={todayRecord?.flow ?? '未记录'}
             />
             <SummaryRow
               accent={theme.colors.companionApricot}
               icon={Heartbeat}
               label="痛感"
-              value="轻微"
+              value={todayRecord?.pain ?? '未记录'}
             />
             <SummaryRow
               accent={theme.colors.companionLavender}
               icon={Sparkle}
               label="症状"
-              value="腰酸、乏力"
+              value={todayRecord?.symptoms.join('、') || '未记录'}
             />
             <Pressable
               accessibilityRole="button"
@@ -174,6 +203,46 @@ export default function TodayScreen() {
       ) : null}
     </Page>
   );
+}
+
+function countRecordFields(
+  record:
+    | {
+        flow: string | null;
+        pain: string | null;
+        symptoms: string[];
+        mood: string | null;
+        note: string | null;
+      }
+    | undefined,
+) {
+  if (!record) return 0;
+  return [
+    record.flow,
+    record.pain,
+    record.mood,
+    record.note,
+    record.symptoms.length ? record.symptoms : null,
+  ].filter(Boolean).length;
+}
+
+function formatShortDate(value: string) {
+  const [, month, day] = value.split('-').map(Number);
+  return `${month}月${day}日`;
+}
+
+function formatFullDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  const weekday = [
+    '星期日',
+    '星期一',
+    '星期二',
+    '星期三',
+    '星期四',
+    '星期五',
+    '星期六',
+  ][new Date(`${value}T12:00:00`).getDay()];
+  return `${year}年${month}月${day}日 · ${weekday}`;
 }
 
 type SummaryRowProps = {

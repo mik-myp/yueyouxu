@@ -2,8 +2,9 @@ import { ThemeProvider } from '@shopify/restyle';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { MonthCalendar } from '@/components/month-calendar';
-import { prototypeToday } from '@/features/prototype/mock-data';
 import { theme } from '@/theme';
+
+const prototypeToday = '2026-09-01';
 
 jest.mock('react-native-reanimated', () => ({
   __esModule: true,
@@ -30,6 +31,7 @@ describe('MonthCalendar', () => {
         <MonthCalendar
           onSelectDate={onSelectDate}
           selectedDate={prototypeToday}
+          today="2026-09-30"
         />
       </ThemeProvider>,
     );

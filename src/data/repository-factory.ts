@@ -7,6 +7,16 @@ import type { AppRepositories } from './repositories';
 const STORAGE_KEY = 'yueyouxu.web-preview.v1';
 
 type WebPreviewState = {
+  dailyRecords: {
+    flow: string | null;
+    id: string;
+    mood: string | null;
+    note: string | null;
+    pain: string | null;
+    recordDate: string;
+    symptoms: string[];
+    timeZone: string;
+  }[];
   lastPeriodStartDate: string | null;
   periods: {
     endDate: string | null;
@@ -21,17 +31,28 @@ type WebPreviewState = {
 function readState(): WebPreviewState {
   const serialized = globalThis.localStorage?.getItem(STORAGE_KEY);
   if (!serialized)
-    return { lastPeriodStartDate: null, periods: [], settings: null };
+    return {
+      dailyRecords: [],
+      lastPeriodStartDate: null,
+      periods: [],
+      settings: null,
+    };
 
   try {
     const parsed = JSON.parse(serialized) as Partial<WebPreviewState>;
     return {
+      dailyRecords: parsed.dailyRecords ?? [],
       lastPeriodStartDate: parsed.lastPeriodStartDate ?? null,
       periods: parsed.periods ?? [],
       settings: parsed.settings ?? null,
     };
   } catch {
-    return { lastPeriodStartDate: null, periods: [], settings: null };
+    return {
+      dailyRecords: [],
+      lastPeriodStartDate: null,
+      periods: [],
+      settings: null,
+    };
   }
 }
 
@@ -73,6 +94,7 @@ export async function createAppRepositories(): Promise<AppRepositories> {
         validatePredictionSettings(input);
         writeState({
           lastPeriodStartDate: input.lastPeriodStartDate,
+          dailyRecords: [],
           periods: [
             {
               endDate: null,
@@ -123,6 +145,49 @@ export async function createAppRepositories(): Promise<AppRepositories> {
           periods: existing
             ? current.periods.map((item) => (item.id === id ? next : item))
             : [...current.periods, next],
+          settings: current.settings
+            ? { ...current.settings, updatedAt }
+            : current.settings,
+        });
+      },
+    },
+    dailyRecords: {
+      async get(recordDate) {
+        const record = readState().dailyRecords.find(
+          (item) => item.recordDate === recordDate,
+        );
+        return record
+          ? { ...record, recordDate: parseLocalDate(record.recordDate) }
+          : null;
+      },
+      async list() {
+        return readState().dailyRecords.map((record) => ({
+          ...record,
+          recordDate: parseLocalDate(record.recordDate),
+        }));
+      },
+      async remove(recordDate) {
+        const current = readState();
+        writeState({
+          ...current,
+          dailyRecords: current.dailyRecords.filter(
+            (record) => record.recordDate !== recordDate,
+          ),
+        });
+      },
+      async save(recordDate, record, updatedAt) {
+        const current = readState();
+        const next = { ...record, id: `daily-${recordDate}`, recordDate };
+        const exists = current.dailyRecords.some(
+          (item) => item.recordDate === recordDate,
+        );
+        writeState({
+          ...current,
+          dailyRecords: exists
+            ? current.dailyRecords.map((item) =>
+                item.recordDate === recordDate ? next : item,
+              )
+            : [...current.dailyRecords, next],
           settings: current.settings
             ? { ...current.settings, updatedAt }
             : current.settings,

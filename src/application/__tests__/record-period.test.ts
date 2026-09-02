@@ -30,7 +30,7 @@ describe('record period', () => {
     const repositories = repository();
     const record = createRecordPeriod(
       repositories,
-      () => new Date('2026-09-02T00:00:00.000Z'),
+      () => new Date('2026-09-05T00:00:00.000Z'),
     );
 
     await record({
@@ -66,7 +66,7 @@ describe('record period', () => {
     await expect(
       record({
         action: 'start',
-        startDate: '2026-09-04',
+        startDate: '2026-09-02',
         timeZone: 'Asia/Shanghai',
       }),
     ).rejects.toThrow('重叠');
@@ -79,5 +79,38 @@ describe('record period', () => {
         timeZone: 'Asia/Shanghai',
       }),
     ).rejects.toThrow('早于');
+  });
+
+  it('does not treat a corrected period id as a new period with the same start date', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-09-03'),
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-02'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-05T00:00:00.000Z'),
+    );
+
+    await expect(
+      record({
+        action: 'start',
+        startDate: '2026-09-01',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('重叠');
+    await expect(
+      record({
+        action: 'correct',
+        endDate: '2026-09-03',
+        periodId: 'missing-period',
+        startDate: '2026-09-02',
+        timeZone: 'Asia/Shanghai',
+      }),
+    ).rejects.toThrow('不存在');
   });
 });

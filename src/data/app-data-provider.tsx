@@ -16,8 +16,18 @@ import {
   createRecordPeriod,
   type RecordPeriodCommand,
 } from '@/application/record-period';
+import {
+  createSaveDailyRecord,
+  type SaveDailyRecordCommand,
+} from '@/application/save-daily-record';
+import { calculatePrediction } from '@/domain/prediction';
 import type { AppRepositories } from '@/data/repositories';
-import type { AppSettings, Period, PredictionSettings } from '@/domain/models';
+import type {
+  AppSettings,
+  DailyRecord,
+  Period,
+  PredictionSettings,
+} from '@/domain/models';
 
 import { createAppRepositories } from './repository-factory';
 
@@ -29,6 +39,10 @@ type AppDataContextValue = {
   refresh(): Promise<void>;
   savePredictionSettings(settings: PredictionSettings): Promise<void>;
   recordPeriod(command: RecordPeriodCommand): Promise<Period>;
+  removePeriod(periodId: string): Promise<void>;
+  saveDailyRecord(command: SaveDailyRecordCommand): Promise<DailyRecord>;
+  dailyRecords: DailyRecord[];
+  prediction: ReturnType<typeof calculatePrediction>;
   undoPeriod(periodId: string, wasStart: boolean): Promise<void>;
   periods: Period[];
   settings: AppSettings | null;
@@ -42,6 +56,8 @@ export function AppDataProvider({ children }: PropsWithChildren) {
   );
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [periods, setPeriods] = useState<Period[]>([]);
+  const [dailyRecords, setDailyRecords] = useState<DailyRecord[]>([]);
+  const prediction = settings ? calculatePrediction(periods, settings) : null;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +65,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     async (nextRepositories: AppRepositories) => {
       setSettings(await nextRepositories.settings.get());
       setPeriods(await nextRepositories.periods.list());
+      setDailyRecords(await nextRepositories.dailyRecords.list());
     },
     [],
   );
@@ -65,6 +82,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         setRepositories(nextRepositories);
         setSettings(nextSettings);
         setPeriods(nextPeriods);
+        setDailyRecords(await nextRepositories.dailyRecords.list());
       } catch (bootstrapError) {
         if (!active) return;
         setError(
@@ -106,6 +124,8 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     const currentRepositories = requireRepositories();
     await currentRepositories.dataManagement.clearAll();
     setSettings(null);
+    setPeriods([]);
+    setDailyRecords([]);
   }, [requireRepositories]);
 
   const savePredictionSettings = useCallback(
@@ -154,6 +174,27 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     [requireRepositories],
   );
 
+  const removePeriod = useCallback(
+    async (periodId: string) => {
+      const currentRepositories = requireRepositories();
+      await currentRepositories.periods.remove(periodId);
+      setPeriods(await currentRepositories.periods.list());
+    },
+    [requireRepositories],
+  );
+
+  const saveDailyRecord = useCallback(
+    async (command: SaveDailyRecordCommand) => {
+      const currentRepositories = requireRepositories();
+      const record = await createSaveDailyRecord(
+        currentRepositories.dailyRecords,
+      )(command);
+      setDailyRecords(await currentRepositories.dailyRecords.list());
+      return record;
+    },
+    [requireRepositories],
+  );
+
   return (
     <AppDataContext.Provider
       value={{
@@ -164,7 +205,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         refresh,
         savePredictionSettings,
         recordPeriod,
+        removePeriod,
         undoPeriod,
+        saveDailyRecord,
+        dailyRecords,
+        prediction,
         periods,
         settings,
       }}

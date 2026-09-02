@@ -12,10 +12,43 @@ import {
 import { Page } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
 import { TrendLine } from '@/components/trend-line';
-import { cycleHistory } from '@/features/prototype/mock-data';
+import { useAppData } from '@/data/app-data-provider';
+import { differenceInLocalDays } from '@/domain/local-date';
 import { Box, Text, theme } from '@/theme';
 
 export default function TrendsScreen() {
+  const { dailyRecords, periods, settings } = useAppData();
+  const ordered = [...periods].sort((left, right) =>
+    left.startDate.localeCompare(right.startDate),
+  );
+  const cycleLengths = ordered
+    .slice(1)
+    .map((period, index) =>
+      differenceInLocalDays(ordered[index].startDate, period.startDate),
+    );
+  const periodLengths = ordered
+    .filter((period) => period.endDate)
+    .map(
+      (period) => differenceInLocalDays(period.startDate, period.endDate!) + 1,
+    );
+  const averageCycle =
+    average(cycleLengths) ?? settings?.referenceCycleLength ?? 28;
+  const cycleMin = cycleLengths.length
+    ? Math.min(...cycleLengths)
+    : averageCycle;
+  const cycleMax = cycleLengths.length
+    ? Math.max(...cycleLengths)
+    : averageCycle;
+  const averagePeriod =
+    average(periodLengths) ?? settings?.referencePeriodLength ?? 5;
+  const latest = ordered[ordered.length - 1];
+  const coveredDays = latest
+    ? dailyRecords.filter(
+        (record) =>
+          record.recordDate >= latest.startDate &&
+          (!latest.endDate || record.recordDate <= latest.endDate),
+      ).length
+    : 0;
   return (
     <Page>
       <ScrollView
@@ -24,26 +57,28 @@ export default function TrendsScreen() {
         tabIndex={0}
       >
         <Box paddingHorizontal="page" paddingTop="l">
-          <SectionHeading action="近 4 个周期" title="周期长度" />
+          <SectionHeading
+            action={`${cycleLengths.length} 个完整间隔`}
+            title="周期长度"
+          />
           <Box alignItems="baseline" flexDirection="row" gap="s" marginTop="m">
             <Text style={styles.heroNumber} variant="heroNumber">
-              30
+              {averageCycle}
             </Text>
             <Box paddingBottom="xs">
               <Text style={styles.heroUnit}>天</Text>
-              <Text variant="caption">通常在 29～31 天之间</Text>
+              <Text variant="caption">
+                {cycleLengths.length
+                  ? `个人范围 ${cycleMin}～${cycleMax} 天`
+                  : '记录不足，暂用初始参考值'}
+              </Text>
             </Box>
           </Box>
-          <Box style={styles.chartFrame}>
-            <TrendLine />
-          </Box>
-          <Box flexDirection="row" justifyContent="space-between">
-            {['6月', '7月', '8月', '本次'].map((label) => (
-              <Text key={label} variant="caption">
-                {label}
-              </Text>
-            ))}
-          </Box>
+          {cycleLengths.length >= 2 ? (
+            <Box style={styles.chartFrame}>
+              <TrendLine values={cycleLengths} />
+            </Box>
+          ) : null}
         </Box>
 
         <Box
@@ -57,9 +92,12 @@ export default function TrendsScreen() {
           paddingHorizontal="page"
           paddingTop="m"
         >
-          <SectionHeading action="3 / 5 天" title="本周期记录覆盖" />
+          <SectionHeading action={`${coveredDays} 天`} title="本周期记录覆盖" />
           <Box flexDirection="row" gap="xs" marginTop="m">
-            {[true, true, true, false, false].map((recorded, index) => (
+            {Array.from(
+              { length: Math.max(1, averagePeriod) },
+              (_, index) => index < coveredDays,
+            ).map((recorded, index) => (
               <Box
                 backgroundColor={
                   recorded ? 'companionBerry' : 'companionCashmereStrong'
@@ -72,11 +110,17 @@ export default function TrendsScreen() {
             ))}
           </Box>
           <Box flexDirection="row" marginTop="m">
-            <CompactMetric label="已记录" value="3 天" />
+            <CompactMetric label="已记录" value={`${coveredDays} 天`} />
             <Box style={styles.metricDivider} />
-            <CompactMetric label="经期覆盖" value="60%" />
+            <CompactMetric
+              label="经期覆盖"
+              value={`${Math.min(100, Math.round((coveredDays / Math.max(1, averagePeriod)) * 100))}%`}
+            />
             <Box style={styles.metricDivider} />
-            <CompactMetric label="待补充" value="2 天" />
+            <CompactMetric
+              label="待补充"
+              value={`${Math.max(0, averagePeriod - coveredDays)} 天`}
+            />
           </Box>
         </Box>
 
@@ -97,7 +141,11 @@ export default function TrendsScreen() {
               <MetricIcon accent={theme.colors.companionBerry} icon={Drop} />
               <Box>
                 <Text variant="caption">经期长度</Text>
-                <Text variant="dataNumber">5～6 天</Text>
+                <Text variant="dataNumber">
+                  {periodLengths.length
+                    ? `${Math.min(...periodLengths)}～${Math.max(...periodLengths)} 天`
+                    : `${averagePeriod} 天`}
+                </Text>
               </Box>
             </Box>
             <Box style={styles.metricDivider} />
@@ -108,23 +156,8 @@ export default function TrendsScreen() {
               />
               <Box>
                 <Text variant="caption">周期波动</Text>
-                <Text variant="dataNumber">2 天</Text>
+                <Text variant="dataNumber">{cycleMax - cycleMin} 天</Text>
               </Box>
-            </Box>
-          </Box>
-          <Box marginTop="m">
-            <Box
-              backgroundColor="companionBerrySoft"
-              borderRadius="s"
-              height={7}
-            >
-              <Box
-                backgroundColor="companionBerry"
-                borderRadius="s"
-                height={7}
-                marginLeft="l"
-                width="52%"
-              />
             </Box>
           </Box>
         </Box>
@@ -136,19 +169,31 @@ export default function TrendsScreen() {
           <Box style={[styles.analysisGroup, styles.sectionSpacing]}>
             <AnalysisRow
               accent={theme.colors.companionLavender}
-              description="最近 4 个周期相差 2 天，整体较稳定"
+              description={
+                cycleLengths.length >= 2
+                  ? `现有周期相差 ${cycleMax - cycleMin} 天`
+                  : '至少记录 3 次经期后可分析稳定性'
+              }
               icon={WaveSine}
               label="周期稳定性"
             />
             <AnalysisRow
               accent={theme.colors.companionBerry}
-              description="4 次中有 3 次持续 5 天"
+              description={
+                periodLengths.length
+                  ? `平均持续 ${averagePeriod} 天`
+                  : '尚无已结束经期样本'
+              }
               icon={Drop}
               label="经期长度"
             />
             <AnalysisRow
               accent={theme.colors.companionApricot}
-              description="当前以轻微痛感、腰酸和乏力为主"
+              description={
+                dailyRecords.length
+                  ? `已积累 ${dailyRecords.length} 天每日记录`
+                  : '尚未添加流量、痛感或症状记录'
+              }
               icon={Heartbeat}
               isLast
               label="记录特点"
@@ -168,43 +213,57 @@ export default function TrendsScreen() {
             borderTopWidth={StyleSheet.hairlineWidth}
             marginTop="m"
           >
-            {cycleHistory.map((item, index) => (
-              <Box
-                alignItems="center"
-                borderBottomColor="companionCashmereStrong"
-                borderBottomWidth={
-                  index === cycleHistory.length - 1
-                    ? 0
-                    : StyleSheet.hairlineWidth
-                }
-                flexDirection="row"
-                key={item.month}
-                minHeight={68}
-                paddingHorizontal="page"
-              >
+            {ordered.length ? (
+              [...ordered].reverse().map((item, index) => (
                 <Box
                   alignItems="center"
-                  height={40}
-                  justifyContent="center"
-                  style={styles.historyIcon}
-                  width={40}
+                  borderBottomColor="companionCashmereStrong"
+                  borderBottomWidth={
+                    index === ordered.length - 1 ? 0 : StyleSheet.hairlineWidth
+                  }
+                  flexDirection="row"
+                  key={item.id}
+                  minHeight={68}
+                  paddingHorizontal="page"
                 >
-                  <CalendarHeart
-                    color={theme.colors.companionBerry}
-                    size={21}
-                    weight="duotone"
-                  />
+                  <Box
+                    alignItems="center"
+                    height={40}
+                    justifyContent="center"
+                    style={styles.historyIcon}
+                    width={40}
+                  >
+                    <CalendarHeart
+                      color={theme.colors.companionBerry}
+                      size={21}
+                      weight="duotone"
+                    />
+                  </Box>
+                  <Box flex={1} marginLeft="m">
+                    <Text variant="body">{formatDate(item.startDate)}开始</Text>
+                    <Text variant="caption">
+                      {item.endDate
+                        ? `持续 ${differenceInLocalDays(item.startDate, item.endDate) + 1} 天`
+                        : '进行中'}
+                    </Text>
+                  </Box>
+                  <Box alignItems="flex-end">
+                    <Text style={styles.cycleLength}>
+                      {item.endDate ? formatDate(item.endDate) : '未结束'}
+                    </Text>
+                    <Text variant="caption">结束</Text>
+                  </Box>
                 </Box>
-                <Box flex={1} marginLeft="m">
-                  <Text variant="body">{item.start}开始</Text>
-                  <Text variant="caption">持续 {item.periodLength} 天</Text>
-                </Box>
-                <Box alignItems="flex-end">
-                  <Text style={styles.cycleLength}>{item.cycleLength} 天</Text>
-                  <Text variant="caption">周期</Text>
-                </Box>
+              ))
+            ) : (
+              <Box
+                minHeight={76}
+                paddingHorizontal="page"
+                justifyContent="center"
+              >
+                <Text variant="caption">尚无经期记录</Text>
               </Box>
-            ))}
+            )}
           </Box>
         </Box>
 
@@ -221,6 +280,17 @@ export default function TrendsScreen() {
       </ScrollView>
     </Page>
   );
+}
+
+function average(values: number[]) {
+  return values.length
+    ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+    : null;
+}
+
+function formatDate(value: string) {
+  const [, month, day] = value.split('-').map(Number);
+  return `${month}月${day}日`;
 }
 
 type MetricIconProps = {
