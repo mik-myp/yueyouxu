@@ -36,7 +36,6 @@ type DayCellProps = {
   date?: DateData;
   onPress: () => void;
   selected: boolean;
-  state?: string;
 };
 
 type CalendarHeaderProps = {
@@ -57,7 +56,6 @@ function DayCell({
   date,
   onPress,
   selected,
-  state,
   periods,
   dailyRecords,
   prediction,
@@ -101,7 +99,7 @@ function DayCell({
         : null;
   const start = Boolean(range && key === range.start);
   const end = Boolean(range && key === range.end);
-  const disabled = state === 'disabled';
+  const disabled = key > today;
   const recorded = dailyRecords.some((record) => record.recordDate === key);
   const isToday = key === today;
   const statusLabel = [
@@ -276,7 +274,9 @@ export function MonthCalendar({
   today = formatLocalDate(new Date()),
 }: MonthCalendarProps) {
   const reduceMotion = useReducedMotion();
-  const [visibleMonth, setVisibleMonth] = useState(selectedDate);
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => `${selectedDate.slice(0, 7)}-01`,
+  );
   const [direction, setDirection] = useState(0);
 
   const showMonth = useCallback((amount: number) => {
@@ -315,6 +315,18 @@ export function MonthCalendar({
     [visibleMonth],
   );
 
+  const selectDate = useCallback(
+    (date: string) => {
+      const nextMonth = `${date.slice(0, 7)}-01`;
+      if (nextMonth !== visibleMonth) {
+        setDirection(nextMonth > visibleMonth ? 1 : -1);
+        setVisibleMonth(nextMonth);
+      }
+      onSelectDate(date);
+    },
+    [onSelectDate, visibleMonth],
+  );
+
   const entering = reduceMotion
     ? undefined
     : direction > 0
@@ -330,16 +342,15 @@ export function MonthCalendar({
           <Calendar
             current={visibleMonth}
             customHeader={CalendarHeader}
-            dayComponent={({ date, state }) => (
+            dayComponent={({ date }) => (
               <DayCell
                 date={date}
                 dailyRecords={dailyRecords}
                 estimatedPeriodRanges={estimatedPeriodRanges}
-                onPress={() => date && onSelectDate(date.dateString)}
+                onPress={() => date && selectDate(date.dateString)}
                 periods={periods}
                 prediction={prediction}
                 selected={date?.dateString === selectedDate}
-                state={state}
                 today={today}
               />
             )}

@@ -48,36 +48,63 @@ export function createRecordPeriod(
       timeZone: command.timeZone,
     };
     if (command.action === 'end') {
-      const openPeriod = existingPeriods
-        .filter(
-          (period) => period.endDate === null && period.startDate <= startDate,
-        )
-        .sort((left, right) =>
-          right.startDate.localeCompare(left.startDate),
-        )[0];
-      if (!openPeriod) throw new Error('没有可结束的进行中经期');
-      if (openPeriod.startDate === startDate) {
-        await repository.remove(openPeriod.id);
-        return openPeriod;
+      const targetPeriod = command.periodId
+        ? existingPeriods.find((period) => period.id === command.periodId)
+        : existingPeriods
+            .filter(
+              (period) =>
+                period.endDate === null && period.startDate <= startDate,
+            )
+            .sort((left, right) =>
+              right.startDate.localeCompare(left.startDate),
+            )[0];
+      if (!targetPeriod) throw new Error('没有可结束的经期');
+      if (targetPeriod.startDate > startDate) {
+        throw new Error('月经走了日期不能早于月经来了日期');
+      }
+      if (targetPeriod.startDate === startDate) {
+        await repository.remove(targetPeriod.id);
+        return targetPeriod;
+      }
+      if (targetPeriod.endDate === startDate) {
+        const reopenedPeriod: PeriodUpdate = {
+          endDate: null,
+          startDate: targetPeriod.startDate,
+          timeZone: command.timeZone,
+        };
+        await repository.save(
+          targetPeriod.id,
+          reopenedPeriod,
+          now().toISOString(),
+        );
+        return {
+          ...targetPeriod,
+          endDate: null,
+          timeZone: command.timeZone,
+        };
       }
       const completedPeriod: PeriodUpdate = {
         endDate: startDate,
-        startDate: openPeriod.startDate,
+        startDate: targetPeriod.startDate,
         timeZone: command.timeZone,
       };
       const conflict = existingPeriods.some(
         (period) =>
-          period.id !== openPeriod.id && overlaps(completedPeriod, period),
+          period.id !== targetPeriod.id && overlaps(completedPeriod, period),
       );
       if (conflict) {
         throw new Error('月经来了到月经走了之间存在另一段经期，请调整日期');
       }
       await repository.save(
-        openPeriod.id,
+        targetPeriod.id,
         completedPeriod,
         now().toISOString(),
       );
-      return { ...openPeriod, endDate: startDate, timeZone: command.timeZone };
+      return {
+        ...targetPeriod,
+        endDate: startDate,
+        timeZone: command.timeZone,
+      };
     }
 
     if (

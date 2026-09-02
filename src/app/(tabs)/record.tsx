@@ -36,7 +36,6 @@ export default function RecordScreen() {
     return saved ? toDraft(saved) : emptyDraft();
   });
   const selectedPeriod = findPeriodForDate(periods, selectedDate);
-  const completedPeriodSelected = Boolean(selectedPeriod?.endDate);
   const referencePeriodLength =
     prediction?.periodLength ?? settings?.referencePeriodLength ?? 5;
   const openPeriodForSelectedDate = [...periods]
@@ -44,6 +43,7 @@ export default function RecordScreen() {
       (period) => period.endDate === null && period.startDate <= selectedDate,
     )
     .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
+  const periodToEnd = selectedPeriod ?? openPeriodForSelectedDate;
   const estimatedPeriodRanges = getEstimatedPeriodRanges(
     periods,
     referencePeriodLength,
@@ -53,7 +53,7 @@ export default function RecordScreen() {
         (range) => range.periodId === openPeriodForSelectedDate.id,
       )
     : null;
-  const periodButtonPrimary = Boolean(openPeriodForSelectedDate);
+  const periodButtonPrimary = Boolean(periodToEnd);
 
   function openSheet(kind: RecordKind) {
     const saved = dailyRecords.find(
@@ -96,7 +96,8 @@ export default function RecordScreen() {
     setActionError(null);
     try {
       await recordPeriod({
-        action: openPeriodForSelectedDate ? 'end' : 'start',
+        action: periodToEnd ? 'end' : 'start',
+        periodId: periodToEnd?.id,
         startDate: selectedDate,
         timeZone: currentTimeZone(),
       });
@@ -116,6 +117,12 @@ export default function RecordScreen() {
 
   function periodCaption() {
     if (selectedPeriod?.endDate) {
+      if (selectedDate === selectedPeriod.startDate) {
+        return '已标记月经来了';
+      }
+      if (selectedDate === selectedPeriod.endDate) {
+        return '已标记月经走了';
+      }
       return '已记录为实际经期';
     }
     if (selectedPeriod && selectedEstimatedRange) {
@@ -128,7 +135,7 @@ export default function RecordScreen() {
   }
 
   function periodButtonLabel() {
-    if (openPeriodForSelectedDate) return '月经走了';
+    if (periodToEnd) return '月经走了';
     return '月经来了';
   }
 
@@ -177,38 +184,34 @@ export default function RecordScreen() {
               {periodCaption()}
             </Text>
           </Box>
-          {!completedPeriodSelected ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void togglePeriod()}
-              style={[
-                styles.periodButton,
-                !periodButtonPrimary && styles.periodButtonInactive,
-              ]}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void togglePeriod()}
+            style={[
+              styles.periodButton,
+              !periodButtonPrimary && styles.periodButtonInactive,
+            ]}
+          >
+            {periodButtonPrimary ? (
+              <CheckCircle
+                color={theme.colors.companionSurface}
+                size={18}
+                weight="fill"
+              />
+            ) : (
+              <Drop
+                color={theme.colors.companionBerry}
+                size={18}
+                weight="duotone"
+              />
+            )}
+            <Text
+              style={periodButtonPrimary ? styles.periodButtonText : undefined}
+              variant="label"
             >
-              {periodButtonPrimary ? (
-                <CheckCircle
-                  color={theme.colors.companionSurface}
-                  size={18}
-                  weight="fill"
-                />
-              ) : (
-                <Drop
-                  color={theme.colors.companionBerry}
-                  size={18}
-                  weight="duotone"
-                />
-              )}
-              <Text
-                style={
-                  periodButtonPrimary ? styles.periodButtonText : undefined
-                }
-                variant="label"
-              >
-                {periodButtonLabel()}
-              </Text>
-            </Pressable>
-          ) : null}
+              {periodButtonLabel()}
+            </Text>
+          </Pressable>
         </Box>
 
         <Box

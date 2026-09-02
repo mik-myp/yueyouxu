@@ -44,6 +44,23 @@ describe('MonthCalendar', () => {
     expect(onSelectDate).toHaveBeenCalledWith('2026-09-10');
   });
 
+  it('allows a past date shown in an adjacent month to be selected', async () => {
+    const onSelectDate = jest.fn();
+    await render(
+      <ThemeProvider theme={theme}>
+        <MonthCalendar
+          onSelectDate={onSelectDate}
+          selectedDate="2026-08-11"
+          today="2026-09-02"
+        />
+      </ThemeProvider>,
+    );
+
+    await fireEvent.press(screen.getByRole('button', { name: '9月1日' }));
+
+    expect(onSelectDate).toHaveBeenCalledWith('2026-09-01');
+  });
+
   it('labels the estimated period before an end date is selected', async () => {
     await render(
       <ThemeProvider theme={theme}>

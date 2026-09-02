@@ -72,6 +72,82 @@ describe('record period', () => {
     expect(await repositories.list()).toEqual([]);
   });
 
+  it('removes a completed period when its start day is marked as ended', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-12'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-11',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toEqual([]);
+  });
+
+  it('reopens a completed period when its end day is marked as ended again', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-12'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    const reopened = await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-12',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(reopened.endDate).toBeNull();
+    expect((await repositories.list())[0].endDate).toBeNull();
+  });
+
+  it('moves a completed period end to a selected date inside its range', async () => {
+    const repositories = repository([
+      {
+        endDate: parseLocalDate('2026-08-15'),
+        id: 'period-2026-08-11',
+        source: 'manual',
+        startDate: parseLocalDate('2026-08-11'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'end',
+      periodId: 'period-2026-08-11',
+      startDate: '2026-08-13',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect((await repositories.list())[0].endDate).toBe('2026-08-13');
+  });
+
   it('rejects overlapping periods and inverted corrections', async () => {
     const repositories = repository([
       {
