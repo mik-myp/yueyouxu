@@ -10,9 +10,9 @@ import Animated, {
 import {
   CaretLeft,
   CaretRight,
-  CheckCircle,
   ClipboardText,
   Drop,
+  Minus,
   Pause,
   Play,
   Sparkle,
@@ -50,6 +50,11 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
 function inRange(date: string, start: string, end: string) {
   return date >= start && date <= end;
+}
+
+function weekDay(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
 
 function DayCell({
@@ -99,6 +104,9 @@ function DayCell({
         : null;
   const start = Boolean(range && key === range.start);
   const end = Boolean(range && key === range.end);
+  const dayOfWeek = weekDay(key);
+  const segmentStart = start || dayOfWeek === 0;
+  const segmentEnd = end || dayOfWeek === 6;
   const disabled = key > today;
   const recorded = dailyRecords.some((record) => record.recordDate === key);
   const isToday = key === today;
@@ -156,8 +164,8 @@ function DayCell({
         <View
           style={[
             styles.band,
-            start && styles.bandStart,
-            end && styles.bandEnd,
+            segmentStart && styles.bandStart,
+            segmentEnd && styles.bandEnd,
             actual
               ? styles.actualBand
               : estimated
@@ -165,23 +173,16 @@ function DayCell({
                 : styles.predictedBand,
             !actual &&
               (estimated || predicted) &&
-              start &&
+              segmentStart &&
               styles.predictedBandStart,
             !actual &&
               (estimated || predicted) &&
-              end &&
+              segmentEnd &&
               styles.predictedBandEnd,
           ]}
         />
       ) : null}
-      <View
-        style={[
-          styles.dayNumber,
-          isToday && !actual && styles.today,
-          selected && !actual && styles.selected,
-          selected && actual && styles.selectedActual,
-        ]}
-      >
+      <View style={[styles.dayNumber, isToday && !actual && styles.today]}>
         <View style={styles.markerRow}>
           {markers.map((marker) => (
             <DayStatusMarker {...marker} key={marker.key} />
@@ -196,7 +197,16 @@ function DayCell({
         >
           {date.day}
         </Text>
-        <View style={styles.markerSpacer} />
+        <View style={styles.markerSpacer}>
+          {selected ? (
+            <View
+              style={[
+                styles.selectionMark,
+                actual && styles.selectionMarkActual,
+              ]}
+            />
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -377,9 +387,9 @@ export function MonthCalendar({
           label="预测经期"
         />
         <LegendItem
-          backgroundColor={theme.colors.companionCashmere}
+          backgroundColor={theme.colors.transparent}
           color={theme.colors.companionInk}
-          icon={CheckCircle}
+          icon={Minus}
           label="已选择"
         />
         <LegendItem
@@ -438,23 +448,23 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   band: {
-    bottom: 2,
+    bottom: 3,
     left: 0,
     position: 'absolute',
     right: 0,
-    top: 2,
+    top: 3,
   },
   bandEnd: {
-    borderBottomRightRadius: 12,
+    borderBottomRightRadius: 14,
     borderCurve: 'continuous',
-    borderTopRightRadius: 12,
-    right: 5,
+    borderTopRightRadius: 14,
+    right: 4,
   },
   bandStart: {
-    borderBottomLeftRadius: 12,
+    borderBottomLeftRadius: 14,
     borderCurve: 'continuous',
-    borderTopLeftRadius: 12,
-    left: 5,
+    borderTopLeftRadius: 14,
+    left: 4,
   },
   calendar: {
     backgroundColor: theme.colors.companionCanvas,
@@ -477,7 +487,7 @@ const styles = StyleSheet.create({
   dayNumber: {
     alignItems: 'center',
     borderCurve: 'continuous',
-    borderRadius: 17,
+    borderRadius: 22,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -493,11 +503,11 @@ const styles = StyleSheet.create({
   },
   estimatedBand: {
     backgroundColor: theme.colors.companionBerryWash,
-    borderBottomColor: theme.colors.companionBerry,
-    borderBottomWidth: 1.5,
+    borderBottomColor: theme.colors.companionBerryOutline,
+    borderBottomWidth: 1,
     borderStyle: 'dashed',
-    borderTopColor: theme.colors.companionBerry,
-    borderTopWidth: 1.5,
+    borderTopColor: theme.colors.companionBerryOutline,
+    borderTopWidth: 1,
   },
   monthButton: {
     alignItems: 'center',
@@ -521,17 +531,17 @@ const styles = StyleSheet.create({
   predictedBand: {
     backgroundColor: theme.colors.companionBerryWash,
     borderBottomColor: theme.colors.companionBerryOutline,
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderTopColor: theme.colors.companionBerryOutline,
-    borderTopWidth: 2,
+    borderTopWidth: 1.5,
   },
   predictedBandEnd: {
     borderRightColor: theme.colors.companionBerryOutline,
-    borderRightWidth: 2,
+    borderRightWidth: 1.5,
   },
   predictedBandStart: {
     borderLeftColor: theme.colors.companionBerryOutline,
-    borderLeftWidth: 2,
+    borderLeftWidth: 1.5,
   },
   legend: {
     borderTopColor: theme.colors.companionCashmereStrong,
@@ -573,17 +583,18 @@ const styles = StyleSheet.create({
     paddingTop: 3,
   },
   markerSpacer: {
+    alignItems: 'center',
     height: 14,
+    justifyContent: 'center',
   },
-  selected: {
-    backgroundColor: theme.colors.companionCashmere,
-    borderColor: theme.colors.companionInk,
-    borderWidth: 1.5,
-    boxShadow: `0 2px 5px ${theme.colors.companionShadow}`,
+  selectionMark: {
+    backgroundColor: theme.colors.companionInk,
+    borderRadius: 2,
+    height: 3,
+    width: 12,
   },
-  selectedActual: {
-    borderColor: theme.colors.companionSurface,
-    borderWidth: 2,
+  selectionMarkActual: {
+    backgroundColor: theme.colors.companionButter,
   },
   statusMarker: {
     alignItems: 'center',

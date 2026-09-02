@@ -18,9 +18,9 @@ jest.mock('react-native-reanimated', () => ({
 jest.mock('@/components/soft-icons', () => ({
   CaretLeft: 'CaretLeft',
   CaretRight: 'CaretRight',
-  CheckCircle: 'CheckCircle',
   ClipboardText: 'ClipboardText',
   Drop: 'Drop',
+  Minus: 'Minus',
   Pause: 'Pause',
   Play: 'Play',
   Sparkle: 'Sparkle',
