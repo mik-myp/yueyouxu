@@ -30,17 +30,18 @@ yueyouxu-v0.1.1.apk
 
 不要上传 Debug APK、AAB 或多个架构 APK。更新服务只接受当前仓库 `mik-myp/yueyouxu` 的 GitHub HTTPS Release 下载地址。
 
-## 首次构建准备
+## 构建与签名方式
 
-当前仓库已提供 `eas.json` 的 `github` 构建配置，输出可直接安装的签名 APK。第一次构建需要在本机完成 Expo 项目关联和 Android 签名凭据初始化：
+`.github/workflows/android-release.yml` 在推送 `v*.*.*` 标签时执行完整验证，通过 Expo Prebuild 生成 Android 工程，再由 Gradle 构建签名 APK。构建成功后，Actions 自动上传 APK 与 SHA-256 文件并创建 GitHub Release。工作流也支持手动预检；预检只生成 Actions Artifact，不创建公开 Release。
 
-```bash
-npx eas-cli@latest login
-npx eas-cli@latest init
-npx eas-cli@latest build --platform android --profile github
-```
+发布签名只从以下 GitHub Actions Secrets 读取：
 
-EAS 可以生成并托管 Android Keystore。必须把凭据作为项目发布资产妥善备份；后续版本必须使用同一个 Keystore，否则 Android 会拒绝覆盖安装，用户只能卸载旧版并丢失本地数据。
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+Keystore 和密码不得写入 Git、Actions 日志或 Release。必须把本地 Keystore 与系统钥匙串中的密码作为不可替代的发布凭据备份；后续版本必须使用同一个 Keystore，否则 Android 会拒绝覆盖安装，用户只能卸载旧版并丢失本地数据。
 
 ## 每次发布流程
 
@@ -57,28 +58,26 @@ npm test -- --runInBand
 npx expo-doctor@latest
 ```
 
-4. 构建签名 APK：
+4. 在 `master` 上手动运行一次预检，确认签名 APK Artifact 构建成功但不发布：
 
 ```bash
-npx eas-cli@latest build --platform android --profile github
+gh workflow run android-release.yml --ref master -f release_tag=v0.1.1
+gh run watch --exit-status
 ```
 
-5. 从 EAS 构建结果下载 APK，并按版本约定重命名。
-6. 验证 APK 签名和摘要：
-
-```bash
-apksigner verify --verbose --print-certs yueyouxu-v0.1.1.apk
-shasum -a 256 yueyouxu-v0.1.1.apk
-```
-
-7. 创建标签和 GitHub Release：
+5. 创建并推送标签，触发正式 Android Release Actions：
 
 ```bash
 git tag -a v0.1.1 -m "月有序 v0.1.1"
 git push origin v0.1.1
-gh release create v0.1.1 yueyouxu-v0.1.1.apk \
-  --title "月有序 v0.1.1" \
-  --generate-notes
+```
+
+6. 在 GitHub Actions 中确认验证、Prebuild、Release 签名和 APK 构建全部通过。
+7. 从创建的 Release 下载 APK，独立验证签名与摘要：
+
+```bash
+apksigner verify --verbose --print-certs yueyouxu-v0.1.1.apk
+shasum -a 256 yueyouxu-v0.1.1.apk
 ```
 
 8. 在一台没有安装应用的 Android 设备上验证首次安装。

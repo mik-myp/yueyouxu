@@ -28,6 +28,7 @@
           }
         }
       ],
+      "./plugins/with-android-release-signing",
       "expo-sqlite"
     ],
     "experiments": {
