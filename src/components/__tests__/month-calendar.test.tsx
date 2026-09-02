@@ -5,9 +5,21 @@ import { MonthCalendar } from '@/components/month-calendar';
 import { prototypeToday } from '@/features/prototype/mock-data';
 import { theme } from '@/theme';
 
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: 'AnimatedView' },
+  FadeInLeft: { duration: () => undefined },
+  FadeInRight: { duration: () => undefined },
+  useReducedMotion: () => false,
+}));
+
 jest.mock('@/components/soft-icons', () => ({
   CaretLeft: 'CaretLeft',
   CaretRight: 'CaretRight',
+  CheckCircle: 'CheckCircle',
+  Drop: 'Drop',
+  NotePencil: 'NotePencil',
+  Sparkle: 'Sparkle',
 }));
 
 describe('MonthCalendar', () => {

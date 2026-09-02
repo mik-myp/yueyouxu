@@ -1,10 +1,10 @@
-import type { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 
+import type { Icon } from '@/components/soft-icons';
 import { Box, Text, theme } from '@/theme';
 
 type PrimaryButtonProps = {
-  icon?: LucideIcon;
+  icon?: Icon;
   label: string;
   onPress: () => void;
   tone?: 'primary' | 'neutral';
@@ -32,11 +32,16 @@ export function PrimaryButton({
         {Icon ? (
           <Icon
             color={primary ? theme.colors.surface : theme.colors.textPrimary}
-            size={19}
-            strokeWidth={2}
+            size={20}
+            weight={primary ? 'bold' : 'duotone'}
           />
         ) : null}
-        <Text style={{ color: primary ? '#FFFFFF' : theme.colors.textPrimary }}>
+        <Text
+          style={[
+            styles.label,
+            { color: primary ? '#FFFFFF' : theme.colors.textPrimary },
+          ]}
+        >
           {label}
         </Text>
       </Box>
@@ -47,21 +52,31 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: 8,
-    height: 52,
+    borderCurve: 'continuous',
+    borderRadius: 15,
+    height: 54,
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
   primary: {
-    backgroundColor: theme.colors.periodAction,
+    backgroundColor: theme.colors.companionBerry,
+    borderColor: theme.colors.companionBerry,
+    borderWidth: 1,
+    boxShadow: `0 5px 12px rgba(146, 36, 75, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
   },
   neutral: {
-    backgroundColor: theme.colors.surfaceMuted,
-    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.companionCashmere,
+    borderColor: theme.colors.companionHighlight,
     borderWidth: 1,
+    boxShadow: `0 4px 10px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
   },
   pressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.82,
+    transform: [{ scale: 0.985 }],
   },
 });

@@ -59,16 +59,7 @@ export default function RecordScreen() {
         style={styles.scroll}
         tabIndex={0}
       >
-        <Box paddingHorizontal="page" paddingTop="m">
-          <Text style={styles.title} variant="title">
-            记录
-          </Text>
-          <Text style={styles.subtitle} variant="caption">
-            选择日期，查看或补充当天状态
-          </Text>
-        </Box>
-
-        <Box marginTop="m">
+        <Box paddingTop="m">
           <MonthCalendar
             onSelectDate={selectDate}
             selectedDate={selectedDate}
@@ -135,7 +126,7 @@ export default function RecordScreen() {
             value={draft.flow}
           />
           <RecordRow
-            accent={theme.colors.companionBerry}
+            accent={theme.colors.companionApricot}
             icon={Heartbeat}
             label="痛感"
             onPress={() => openSheet('pain')}
@@ -173,7 +164,6 @@ export default function RecordScreen() {
         onChange={setDraft}
         onClose={closeSheet}
         onDismiss={() => setActiveKind(null)}
-        onSingleSelect={closeSheet}
         ref={sheetRef}
       />
     </Page>
@@ -182,15 +172,15 @@ export default function RecordScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 32,
+    paddingBottom: 44,
   },
   dateCaption: {
     color: theme.colors.textSecondary,
     marginTop: 1,
   },
   dateSummary: {
-    minHeight: 86,
-    paddingVertical: 16,
+    minHeight: 94,
+    paddingVertical: 20,
   },
   dateTitle: {
     color: theme.colors.companionInk,
@@ -218,12 +208,5 @@ const styles = StyleSheet.create({
   },
   scroll: {
     backgroundColor: theme.colors.companionCanvas,
-  },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  title: {
-    color: theme.colors.companionInk,
   },
 });

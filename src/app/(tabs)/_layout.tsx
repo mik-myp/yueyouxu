@@ -29,6 +29,12 @@ export default function TabsLayout() {
           title: '趋势',
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: '设置',
+        }}
+      />
     </Tabs>
   );
 }

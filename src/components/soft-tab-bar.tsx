@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CalendarDots,
   ChartLineUp,
+  GearSix,
   MoonStars,
   type Icon,
 } from '@/components/soft-icons';
@@ -25,6 +26,7 @@ const tabMeta: Record<string, { icon: Icon; label: string }> = {
   index: { icon: MoonStars, label: '今天' },
   record: { icon: CalendarDots, label: '记录' },
   trends: { icon: ChartLineUp, label: '趋势' },
+  settings: { icon: GearSix, label: '设置' },
 };
 
 type SoftTabItemProps = {

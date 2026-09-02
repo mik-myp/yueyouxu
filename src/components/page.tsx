@@ -5,7 +5,7 @@ import { Box } from '@/theme';
 
 export function Page({ children }: PropsWithChildren) {
   return (
-    <Box flex={1} backgroundColor="background">
+    <Box flex={1} backgroundColor="companionCanvas">
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <Box
           alignSelf="center"
