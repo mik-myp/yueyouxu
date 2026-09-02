@@ -211,7 +211,39 @@ describe('record period', () => {
     });
   });
 
-  it('rejects a second open period and an end event crossing another period', async () => {
+  it('allows a historical open period before a newer open period', async () => {
+    const repositories = repository([
+      {
+        endDate: null,
+        id: 'period-2026-09-01',
+        source: 'manual',
+        startDate: parseLocalDate('2026-09-01'),
+        timeZone: 'Asia/Shanghai',
+      },
+    ]);
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-02T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-08-01',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-08-02',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toMatchObject([
+      { endDate: null, startDate: '2026-09-01' },
+      { endDate: '2026-08-02', startDate: '2026-08-01' },
+    ]);
+  });
+
+  it('rejects a later start on an open timeline and an end crossing another period', async () => {
     const repositories = repository([
       {
         endDate: parseLocalDate('2026-09-06'),
@@ -237,7 +269,7 @@ describe('record period', () => {
         startDate: '2026-09-03',
         timeZone: 'Asia/Shanghai',
       }),
-    ).rejects.toThrow('请先记录已有经期的月经走了日期');
+    ).rejects.toThrow('已有进行中的经期');
     await expect(
       record({
         action: 'end',

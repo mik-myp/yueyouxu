@@ -22,7 +22,7 @@ import { Text, theme } from '@/theme';
 
 type MonthCalendarProps = {
   dailyRecords?: DailyRecord[];
-  estimatedPeriodRange?: { end: string; start: string } | null;
+  estimatedPeriodRanges?: { end: string; start: string }[];
   onSelectDate: (date: string) => void;
   periods?: Period[];
   prediction?: PredictionWindow | null;
@@ -60,13 +60,13 @@ function DayCell({
   dailyRecords,
   prediction,
   today,
-  estimatedPeriodRange,
+  estimatedPeriodRanges,
 }: DayCellProps & {
   periods: Period[];
   dailyRecords: DailyRecord[];
   prediction?: PredictionWindow | null;
   today: string;
-  estimatedPeriodRange?: { end: string; start: string } | null;
+  estimatedPeriodRanges: { end: string; start: string }[];
 }) {
   if (!date) return null;
 
@@ -77,11 +77,10 @@ function DayCell({
       : key === period.startDate,
   );
   const actual = Boolean(actualPeriod);
-  const estimated = Boolean(
-    estimatedPeriodRange &&
-    !actual &&
-    inRange(key, estimatedPeriodRange.start, estimatedPeriodRange.end),
+  const estimatedPeriodRange = estimatedPeriodRanges.find((range) =>
+    inRange(key, range.start, range.end),
   );
+  const estimated = Boolean(estimatedPeriodRange && !actual);
   const predicted = Boolean(
     prediction &&
     !actual &&
@@ -252,7 +251,7 @@ function CalendarHeader({ addMonth, month }: CalendarHeaderProps) {
 
 export function MonthCalendar({
   dailyRecords = [],
-  estimatedPeriodRange,
+  estimatedPeriodRanges = [],
   onSelectDate,
   periods = [],
   prediction,
@@ -318,7 +317,7 @@ export function MonthCalendar({
               <DayCell
                 date={date}
                 dailyRecords={dailyRecords}
-                estimatedPeriodRange={estimatedPeriodRange}
+                estimatedPeriodRanges={estimatedPeriodRanges}
                 onPress={() => date && onSelectDate(date.dateString)}
                 periods={periods}
                 prediction={prediction}

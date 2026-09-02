@@ -56,17 +56,22 @@ export default function RecordScreen() {
     null;
   const periodActive = Boolean(selectedPeriod);
   const referencePeriodLength = settings?.referencePeriodLength ?? 5;
-  const openPeriod = [...periods]
-    .filter((period) => period.endDate === null && period.startDate <= today)
+  const openPeriodForSelectedDate = [...periods]
+    .filter(
+      (period) => period.endDate === null && period.startDate <= selectedDate,
+    )
     .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
-  const estimatedPeriodRange = openPeriod
-    ? {
-        end: addLocalDays(openPeriod.startDate, referencePeriodLength - 1),
-        start: addLocalDays(openPeriod.startDate, 1),
-      }
+  const estimatedPeriodRanges = getEstimatedPeriodRanges(
+    periods,
+    referencePeriodLength,
+  );
+  const selectedEstimatedRange = openPeriodForSelectedDate
+    ? estimatedPeriodRanges.find(
+        (range) => range.periodId === openPeriodForSelectedDate.id,
+      )
     : null;
   const canEndOpenPeriod = Boolean(
-    openPeriod && selectedDate >= openPeriod.startDate && !selectedPeriod,
+    openPeriodForSelectedDate && !selectedPeriod,
   );
   const periodButtonPrimary = periodActive || canEndOpenPeriod;
 
@@ -115,15 +120,9 @@ export default function RecordScreen() {
       openPeriodEditor(selectedPeriod);
       return;
     }
-    if (openPeriod && selectedDate < openPeriod.startDate) {
-      setActionError(
-        `请先为 ${formatShortDate(openPeriod.startDate)} 的经期选择月经走了日期`,
-      );
-      return;
-    }
     try {
       await recordPeriod({
-        action: openPeriod ? 'end' : 'start',
+        action: openPeriodForSelectedDate ? 'end' : 'start',
         startDate: selectedDate,
         timeZone: currentTimeZone(),
       });
@@ -190,24 +189,18 @@ export default function RecordScreen() {
     if (selectedPeriod?.endDate) {
       return '实际经期记录 · 可调整开始日或结束日';
     }
-    if (selectedPeriod && estimatedPeriodRange) {
-      return `已标记月经来了 · 预计至 ${formatShortDate(estimatedPeriodRange.end)}`;
+    if (selectedPeriod && selectedEstimatedRange) {
+      return `已标记月经来了 · 预计至 ${formatShortDate(selectedEstimatedRange.end)}`;
     }
-    if (openPeriod) {
-      return selectedDate >= openPeriod.startDate
-        ? `${formatShortDate(openPeriod.startDate)} 月经来了 · 当前选择为走了日期`
-        : `${formatShortDate(openPeriod.startDate)} 已标记月经来了 · 请先完成本次经期`;
+    if (openPeriodForSelectedDate) {
+      return `${formatShortDate(openPeriodForSelectedDate.startDate)} 月经来了 · 当前选择为走了日期`;
     }
     return selectedDate < today ? '非经期记录 · 可标记月经来了' : '非经期记录';
   }
 
   function periodButtonLabel() {
     if (selectedPeriod?.endDate) return '调整经期';
-    if (openPeriod) {
-      return selectedDate >= openPeriod.startDate
-        ? '月经走了'
-        : '先完成本次经期';
-    }
+    if (openPeriodForSelectedDate) return '月经走了';
     return '月经来了';
   }
 
@@ -222,7 +215,7 @@ export default function RecordScreen() {
         <Box paddingTop="m">
           <MonthCalendar
             dailyRecords={dailyRecords}
-            estimatedPeriodRange={estimatedPeriodRange}
+            estimatedPeriodRanges={estimatedPeriodRanges}
             onSelectDate={selectDate}
             periods={periods}
             prediction={prediction}
@@ -258,16 +251,10 @@ export default function RecordScreen() {
           </Box>
           <Pressable
             accessibilityRole="button"
-            disabled={
-              Boolean(openPeriod) && selectedDate < openPeriod.startDate
-            }
             onPress={() => void togglePeriod()}
             style={[
               styles.periodButton,
               !periodButtonPrimary && styles.periodButtonInactive,
-              openPeriod &&
-                selectedDate < openPeriod.startDate &&
-                styles.periodButtonDisabled,
             ]}
           >
             {periodButtonPrimary ? (
@@ -371,6 +358,30 @@ function findPeriodForDate(periods: DailyRecordPeriod[], date: string) {
   );
 }
 
+function getEstimatedPeriodRanges(
+  periods: DailyRecordPeriod[],
+  referencePeriodLength: number,
+) {
+  const sortedPeriods = [...periods].sort((left, right) =>
+    left.startDate.localeCompare(right.startDate),
+  );
+
+  return sortedPeriods.flatMap((period, index) => {
+    if (period.endDate !== null || referencePeriodLength < 2) return [];
+    const nextPeriod = sortedPeriods[index + 1];
+    const estimatedEnd = addLocalDays(
+      period.startDate,
+      referencePeriodLength - 1,
+    );
+    const end = nextPeriod
+      ? [estimatedEnd, addLocalDays(nextPeriod.startDate, -1)].sort()[0]
+      : estimatedEnd;
+    const start = addLocalDays(period.startDate, 1);
+
+    return start <= end ? [{ end, periodId: period.id, start }] : [];
+  });
+}
+
 function emptyDraft(): DailyRecordDraft {
   return { flow: '', mood: '', note: '', pain: '', symptoms: [] };
 }
@@ -427,9 +438,6 @@ const styles = StyleSheet.create({
   periodButtonInactive: {
     backgroundColor: theme.colors.companionSurface,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
-  },
-  periodButtonDisabled: {
-    opacity: 0.48,
   },
   periodButtonText: {
     color: theme.colors.companionSurface,

@@ -11,8 +11,9 @@ export type RecordPeriodCommand = {
 };
 
 function overlaps(left: PeriodUpdate, right: PeriodUpdate) {
-  const leftEnd = left.endDate ?? '9999-12-31';
-  const rightEnd = right.endDate ?? '9999-12-31';
+  // An open period records a known start event, not an unbounded date range.
+  const leftEnd = left.endDate ?? left.startDate;
+  const rightEnd = right.endDate ?? right.startDate;
   return left.startDate <= rightEnd && right.startDate <= leftEnd;
 }
 
@@ -78,9 +79,11 @@ export function createRecordPeriod(
     if (
       command.action === 'start' &&
       endDate === null &&
-      existingPeriods.some((period) => period.endDate === null)
+      existingPeriods.some(
+        (period) => period.endDate === null && period.startDate <= startDate,
+      )
     ) {
-      throw new Error('请先记录已有经期的月经走了日期');
+      throw new Error('所选日期已有进行中的经期，请先记录月经走了');
     }
     const rangeForConflict =
       command.action === 'start' && endDate === null

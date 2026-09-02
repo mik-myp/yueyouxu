@@ -45,10 +45,16 @@ describe('MonthCalendar', () => {
     await render(
       <ThemeProvider theme={theme}>
         <MonthCalendar
-          estimatedPeriodRange={{
-            end: '2026-09-05',
-            start: '2026-09-02',
-          }}
+          estimatedPeriodRanges={[
+            {
+              end: '2026-08-05',
+              start: '2026-08-02',
+            },
+            {
+              end: '2026-09-05',
+              start: '2026-09-02',
+            },
+          ]}
           onSelectDate={jest.fn()}
           selectedDate={prototypeToday}
           today="2026-09-30"
