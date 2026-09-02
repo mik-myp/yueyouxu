@@ -15,11 +15,24 @@ import { CycleArc } from '@/components/cycle-arc';
 import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
 import { SectionHeading } from '@/components/section-heading';
+import { useAppData } from '@/data/app-data-provider';
+import { currentTimeZone } from '@/domain/local-date';
 import { Box, Text, theme } from '@/theme';
+import { prototypeToday } from '@/features/prototype/mock-data';
 
 export default function TodayScreen() {
   const router = useRouter();
-  const [periodActive, setPeriodActive] = useState(true);
+  const { periods, recordPeriod, undoPeriod } = useAppData();
+  const activePeriod = periods
+    .filter((period) => period.startDate <= prototypeToday)
+    .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
+  const [periodActive, setPeriodActive] = useState(
+    Boolean(activePeriod && activePeriod.endDate === null),
+  );
+  const [lastAction, setLastAction] = useState<{
+    id: string;
+    wasStart: boolean;
+  } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,14 +43,27 @@ export default function TodayScreen() {
     [],
   );
 
-  function togglePeriod() {
-    setPeriodActive((current) => !current);
-    setToastVisible(true);
+  async function togglePeriod() {
+    const wasActive = periodActive;
+    try {
+      const period = await recordPeriod({
+        action: wasActive ? 'end' : 'start',
+        startDate: prototypeToday,
+        timeZone: currentTimeZone(),
+      });
+      setPeriodActive(!wasActive);
+      setLastAction({ id: period.id, wasStart: !wasActive });
+      setToastVisible(true);
+    } catch {
+      setToastVisible(false);
+    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => setToastVisible(false), 3000);
   }
 
-  function undoPeriod() {
+  async function undoPeriodAction() {
+    if (!lastAction) return;
+    await undoPeriod(lastAction.id, lastAction.wasStart);
     setPeriodActive((current) => !current);
     setToastVisible(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -62,7 +88,7 @@ export default function TodayScreen() {
           <PrimaryButton
             icon={periodActive ? Heart : CalendarPlus}
             label={periodActive ? '月经结束' : '月经来了'}
-            onPress={togglePeriod}
+            onPress={() => void togglePeriod()}
           />
           {periodActive ? (
             <PrimaryButton
@@ -138,7 +164,7 @@ export default function TodayScreen() {
             </Text>
             <Pressable
               accessibilityRole="button"
-              onPress={undoPeriod}
+              onPress={() => void undoPeriodAction()}
               style={styles.undoButton}
             >
               <Text style={styles.undoText}>撤销</Text>
