@@ -40,7 +40,6 @@ type AppDataContextValue = {
   refresh(): Promise<void>;
   savePredictionSettings(settings: PredictionSettings): Promise<void>;
   recordPeriod(command: RecordPeriodCommand): Promise<Period>;
-  removePeriod(periodId: string): Promise<void>;
   saveDailyRecord(command: SaveDailyRecordCommand): Promise<DailyRecord>;
   dailyRecords: DailyRecord[];
   analysis: ReturnType<typeof analyzeTrackingData>;
@@ -177,15 +176,6 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     [requireRepositories],
   );
 
-  const removePeriod = useCallback(
-    async (periodId: string) => {
-      const currentRepositories = requireRepositories();
-      await currentRepositories.periods.remove(periodId);
-      setPeriods(await currentRepositories.periods.list());
-    },
-    [requireRepositories],
-  );
-
   const saveDailyRecord = useCallback(
     async (command: SaveDailyRecordCommand) => {
       const currentRepositories = requireRepositories();
@@ -209,7 +199,6 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         refresh,
         savePredictionSettings,
         recordPeriod,
-        removePeriod,
         undoPeriod,
         saveDailyRecord,
         dailyRecords,

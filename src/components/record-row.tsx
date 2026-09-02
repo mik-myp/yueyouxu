@@ -9,6 +9,7 @@ type RecordRowProps = {
   isLast?: boolean;
   label: string;
   onPress: () => void;
+  recorded: boolean;
   value: string;
 };
 
@@ -18,6 +19,7 @@ export function RecordRow({
   isLast,
   label,
   onPress,
+  recorded,
   value,
 }: RecordRowProps) {
   return (
@@ -50,7 +52,13 @@ export function RecordRow({
         </Text>
         <Box flex={1} />
         <Box alignItems="center" flexDirection="row" gap="s" maxWidth="48%">
-          <Text numberOfLines={1} variant="label">
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.value,
+              recorded ? { color: accent } : styles.emptyValue,
+            ]}
+          >
             {value}
           </Text>
           <CaretRight color={theme.colors.textMuted} size={17} weight="bold" />
@@ -73,5 +81,15 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: theme.colors.companionCashmere,
+  },
+  emptyValue: {
+    color: theme.colors.textMuted,
+    fontWeight: '500',
+  },
+  value: {
+    color: theme.colors.companionInk,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
   },
 });

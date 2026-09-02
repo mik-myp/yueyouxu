@@ -56,6 +56,10 @@ export function createRecordPeriod(
           right.startDate.localeCompare(left.startDate),
         )[0];
       if (!openPeriod) throw new Error('没有可结束的进行中经期');
+      if (openPeriod.startDate === startDate) {
+        await repository.remove(openPeriod.id);
+        return openPeriod;
+      }
       const completedPeriod: PeriodUpdate = {
         endDate: startDate,
         startDate: openPeriod.startDate,

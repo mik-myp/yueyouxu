@@ -8,11 +8,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
+  ArrowLineDown,
+  ArrowLineUp,
   CaretLeft,
   CaretRight,
   CheckCircle,
   Drop,
-  NotePencil,
+  ListChecks,
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
@@ -106,30 +108,40 @@ function DayCell({
     actual && '实际经期',
     estimated && '预计经期',
     predicted && '预测经期',
+    actualPeriod && key === actualPeriod.startDate && '月经来了',
+    actualPeriod?.endDate === key && '月经走了',
     recorded && '已记录',
     isToday && '今天',
     selected && '已选择',
   ].filter(Boolean);
-  const marker =
-    actual && start
+  const markers = [
+    actualPeriod && key === actualPeriod.startDate
       ? {
           backgroundColor: theme.colors.companionSurface,
           color: theme.colors.companionBerry,
-          icon: Drop,
+          icon: ArrowLineDown,
+          key: 'period-start',
         }
-      : predicted && start
-        ? {
-            backgroundColor: theme.colors.companionSurface,
-            color: theme.colors.companionBerry,
-            icon: Sparkle,
-          }
-        : recorded
-          ? {
-              backgroundColor: theme.colors.companionLavenderWash,
-              color: theme.colors.companionLavender,
-              icon: NotePencil,
-            }
-          : null;
+      : null,
+    actualPeriod?.endDate === key
+      ? {
+          backgroundColor: theme.colors.companionSurface,
+          color: theme.colors.companionBerry,
+          icon: ArrowLineUp,
+          key: 'period-end',
+        }
+      : null,
+    recorded
+      ? {
+          backgroundColor: actual
+            ? theme.colors.companionSurface
+            : theme.colors.companionLavenderWash,
+          color: theme.colors.companionLavender,
+          icon: ListChecks,
+          key: 'daily-record',
+        }
+      : null,
+  ].filter((marker) => marker !== null);
 
   return (
     <Pressable
@@ -175,6 +187,11 @@ function DayCell({
           selected && actual && styles.selectedActual,
         ]}
       >
+        <View style={styles.markerRow}>
+          {markers.map((marker) => (
+            <DayStatusMarker {...marker} key={marker.key} />
+          ))}
+        </View>
         <Text
           style={[
             styles.dayText,
@@ -185,7 +202,6 @@ function DayCell({
           {date.day}
         </Text>
       </View>
-      {marker ? <DayStatusMarker {...marker} /> : null}
     </Pressable>
   );
 }
@@ -354,16 +370,28 @@ export function MonthCalendar({
           label="预测经期"
         />
         <LegendItem
-          backgroundColor={theme.colors.companionLavenderWash}
-          color={theme.colors.companionLavender}
-          icon={NotePencil}
-          label="已记录"
-        />
-        <LegendItem
           backgroundColor={theme.colors.companionCashmere}
           color={theme.colors.companionInk}
           icon={CheckCircle}
           label="已选择"
+        />
+        <LegendItem
+          backgroundColor={theme.colors.companionSurface}
+          color={theme.colors.companionBerry}
+          icon={ArrowLineDown}
+          label="月经来了"
+        />
+        <LegendItem
+          backgroundColor={theme.colors.companionSurface}
+          color={theme.colors.companionBerry}
+          icon={ArrowLineUp}
+          label="月经走了"
+        />
+        <LegendItem
+          backgroundColor={theme.colors.companionLavenderWash}
+          color={theme.colors.companionLavender}
+          icon={ListChecks}
+          label="已记录"
         />
       </View>
     </View>
@@ -397,16 +425,16 @@ const styles = StyleSheet.create({
   },
   actualText: {
     color: theme.colors.surface,
-    fontSize: 19,
+    fontSize: 15,
     fontWeight: '600',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   band: {
-    bottom: 5,
+    bottom: 2,
     left: 0,
     position: 'absolute',
     right: 0,
-    top: 5,
+    top: 2,
   },
   bandEnd: {
     borderBottomRightRadius: 12,
@@ -430,7 +458,7 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     alignItems: 'center',
-    height: 44,
+    height: 46,
     justifyContent: 'center',
     position: 'relative',
     width: '100%',
@@ -442,9 +470,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderCurve: 'continuous',
     borderRadius: 17,
-    height: 34,
+    height: 40,
     justifyContent: 'center',
-    width: 34,
+    width: 38,
   },
   dayText: {
     color: theme.colors.textPrimary,
@@ -501,6 +529,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.companionCashmereStrong,
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginHorizontal: 20,
     marginTop: 8,
     paddingTop: 12,
@@ -515,16 +544,24 @@ const styles = StyleSheet.create({
   },
   legendItem: {
     alignItems: 'center',
-    flex: 1,
     flexDirection: 'row',
     gap: 4,
     justifyContent: 'center',
     minWidth: 0,
+    paddingVertical: 3,
+    width: '33.333%',
   },
   legendText: {
     color: theme.colors.textSecondary,
     fontSize: 11,
     lineHeight: 16,
+  },
+  markerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 1,
+    height: 11,
+    justifyContent: 'center',
   },
   selected: {
     backgroundColor: theme.colors.companionCashmere,
@@ -538,15 +575,10 @@ const styles = StyleSheet.create({
   },
   statusMarker: {
     alignItems: 'center',
-    borderColor: theme.colors.companionCanvas,
-    borderRadius: 7,
-    borderWidth: 1,
-    height: 14,
+    borderRadius: 5,
+    height: 10,
     justifyContent: 'center',
-    position: 'absolute',
-    right: 4,
-    top: 4,
-    width: 14,
+    width: 10,
   },
   today: {
     borderColor: theme.colors.companionBerry,

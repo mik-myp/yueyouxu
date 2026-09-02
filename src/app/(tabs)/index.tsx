@@ -56,6 +56,7 @@ export default function TodayScreen() {
     ? `${formatShortDate(prediction.earliestDate)}～${formatShortDate(prediction.latestDate)}`
     : undefined;
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -67,13 +68,25 @@ export default function TodayScreen() {
 
   async function togglePeriod() {
     const wasActive = periodActive;
+    const deletesSameDay = Boolean(
+      wasActive && activePeriod?.startDate === today,
+    );
     try {
       const period = await recordPeriod({
         action: wasActive ? 'end' : 'start',
         startDate: today,
         timeZone: currentTimeZone(),
       });
-      setLastAction({ id: period.id, wasStart: !wasActive });
+      setLastAction(
+        deletesSameDay ? null : { id: period.id, wasStart: !wasActive },
+      );
+      setToastMessage(
+        deletesSameDay
+          ? '已取消本次经期'
+          : wasActive
+            ? '已标记月经走了'
+            : '已标记月经开始',
+      );
       setToastVisible(true);
     } catch {
       setToastVisible(false);
@@ -146,18 +159,21 @@ export default function TodayScreen() {
               accent={theme.colors.companionBerry}
               icon={Drop}
               label="流量"
+              recorded={Boolean(todayRecord?.flow)}
               value={todayRecord?.flow ?? '未记录'}
             />
             <SummaryRow
               accent={theme.colors.companionApricot}
               icon={Heartbeat}
               label="痛感"
+              recorded={Boolean(todayRecord?.pain)}
               value={todayRecord?.pain ?? '未记录'}
             />
             <SummaryRow
               accent={theme.colors.companionLavender}
               icon={Sparkle}
               label="症状"
+              recorded={Boolean(todayRecord?.symptoms.length)}
               value={todayRecord?.symptoms.join('、') || '未记录'}
             />
             <Pressable
@@ -190,16 +206,16 @@ export default function TodayScreen() {
             paddingVertical="s"
             style={styles.toast}
           >
-            <Text style={styles.toastText}>
-              {periodActive ? '已标记月经开始' : '已标记月经走了'}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void undoPeriodAction()}
-              style={styles.undoButton}
-            >
-              <Text style={styles.undoText}>撤销</Text>
-            </Pressable>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+            {lastAction ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void undoPeriodAction()}
+                style={styles.undoButton}
+              >
+                <Text style={styles.undoText}>撤销</Text>
+              </Pressable>
+            ) : null}
           </Box>
         </Box>
       ) : null}
@@ -247,10 +263,17 @@ type SummaryRowProps = {
   accent: string;
   icon: Icon;
   label: string;
+  recorded: boolean;
   value: string;
 };
 
-function SummaryRow({ accent, icon: Icon, label, value }: SummaryRowProps) {
+function SummaryRow({
+  accent,
+  icon: Icon,
+  label,
+  recorded,
+  value,
+}: SummaryRowProps) {
   return (
     <Box
       alignItems="center"
@@ -273,7 +296,14 @@ function SummaryRow({ accent, icon: Icon, label, value }: SummaryRowProps) {
         {label}
       </Text>
       <Box flex={1} />
-      <Text variant="body">{value}</Text>
+      <Text
+        style={[
+          styles.summaryValue,
+          recorded ? { color: accent } : styles.summaryValueEmpty,
+        ]}
+      >
+        {value}
+      </Text>
     </Box>
   );
 }
@@ -315,6 +345,16 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 1,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
+  },
+  summaryValue: {
+    color: theme.colors.companionInk,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  summaryValueEmpty: {
+    color: theme.colors.textMuted,
+    fontWeight: '500',
   },
   toast: {
     borderCurve: 'continuous',

@@ -7,10 +7,6 @@ import { MonthCalendar } from '@/components/month-calendar';
 import { Page } from '@/components/page';
 import { RecordDetailSheet } from '@/components/record-detail-sheet';
 import { RecordRow } from '@/components/record-row';
-import {
-  PeriodDetailSheet,
-  type PeriodEditAction,
-} from '@/components/period-detail-sheet';
 import { useAppData } from '@/data/app-data-provider';
 import {
   addLocalDays,
@@ -24,17 +20,14 @@ import { Box, Text, theme } from '@/theme';
 export default function RecordScreen() {
   const today = useMemo(() => formatLocalDate(new Date()), []);
   const sheetRef = useRef<BottomSheetModal>(null);
-  const periodSheetRef = useRef<BottomSheetModal>(null);
   const [selectedDate, setSelectedDate] = useState<string>(today);
   const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const {
     dailyRecords,
     periods,
     prediction,
     recordPeriod,
-    removePeriod,
     saveDailyRecord,
     settings,
   } = useAppData();
@@ -43,11 +36,7 @@ export default function RecordScreen() {
     return saved ? toDraft(saved) : emptyDraft();
   });
   const selectedPeriod = findPeriodForDate(periods, selectedDate);
-  const periodForEditor =
-    periods.find((period) => period.id === editingPeriodId) ??
-    selectedPeriod ??
-    null;
-  const periodActive = Boolean(selectedPeriod);
+  const completedPeriodSelected = Boolean(selectedPeriod?.endDate);
   const referencePeriodLength =
     prediction?.periodLength ?? settings?.referencePeriodLength ?? 5;
   const openPeriodForSelectedDate = [...periods]
@@ -64,10 +53,7 @@ export default function RecordScreen() {
         (range) => range.periodId === openPeriodForSelectedDate.id,
       )
     : null;
-  const canEndOpenPeriod = Boolean(
-    openPeriodForSelectedDate && !selectedPeriod,
-  );
-  const periodButtonPrimary = periodActive || canEndOpenPeriod;
+  const periodButtonPrimary = Boolean(openPeriodForSelectedDate);
 
   function openSheet(kind: RecordKind) {
     const saved = dailyRecords.find(
@@ -108,10 +94,6 @@ export default function RecordScreen() {
 
   async function togglePeriod() {
     setActionError(null);
-    if (selectedPeriod && selectedPeriod.endDate !== null) {
-      openPeriodEditor(selectedPeriod);
-      return;
-    }
     try {
       await recordPeriod({
         action: openPeriodForSelectedDate ? 'end' : 'start',
@@ -121,51 +103,6 @@ export default function RecordScreen() {
     } catch (error) {
       setActionError(error instanceof Error ? error.message : '经期记录失败');
     }
-  }
-
-  function openPeriodEditor(period: Period) {
-    setEditingPeriodId(period.id);
-    requestAnimationFrame(() => periodSheetRef.current?.present());
-  }
-
-  async function correctPeriod(
-    period: DailyRecordPeriod,
-    boundary: 'start' | 'end',
-  ) {
-    try {
-      setActionError(null);
-      await recordPeriod({
-        action: 'correct',
-        endDate: boundary === 'end' ? selectedDate : period.endDate,
-        periodId: period.id,
-        startDate: boundary === 'start' ? selectedDate : period.startDate,
-        timeZone: currentTimeZone(),
-      });
-      periodSheetRef.current?.dismiss();
-      selectDate(selectedDate);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : '经期修正失败');
-      periodSheetRef.current?.dismiss();
-    }
-  }
-
-  async function deletePeriod(period: DailyRecordPeriod) {
-    try {
-      setActionError(null);
-      await removePeriod(period.id);
-      periodSheetRef.current?.dismiss();
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : '经期删除失败');
-      periodSheetRef.current?.dismiss();
-    }
-  }
-
-  function confirmPeriodEdit(
-    period: DailyRecordPeriod,
-    action: PeriodEditAction,
-  ) {
-    if (action === 'delete') void deletePeriod(period);
-    else void correctPeriod(period, action);
   }
 
   function selectedDateLabel() {
@@ -179,7 +116,7 @@ export default function RecordScreen() {
 
   function periodCaption() {
     if (selectedPeriod?.endDate) {
-      return '实际经期记录 · 可调整开始日或结束日';
+      return '已记录为实际经期';
     }
     if (selectedPeriod && selectedEstimatedRange) {
       return `已标记月经来了 · 预计至 ${formatShortDate(selectedEstimatedRange.end)}`;
@@ -191,7 +128,6 @@ export default function RecordScreen() {
   }
 
   function periodButtonLabel() {
-    if (selectedPeriod?.endDate) return '调整经期';
     if (openPeriodForSelectedDate) return '月经走了';
     return '月经来了';
   }
@@ -241,34 +177,38 @@ export default function RecordScreen() {
               {periodCaption()}
             </Text>
           </Box>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void togglePeriod()}
-            style={[
-              styles.periodButton,
-              !periodButtonPrimary && styles.periodButtonInactive,
-            ]}
-          >
-            {periodButtonPrimary ? (
-              <CheckCircle
-                color={theme.colors.companionSurface}
-                size={18}
-                weight="fill"
-              />
-            ) : (
-              <Drop
-                color={theme.colors.companionBerry}
-                size={18}
-                weight="duotone"
-              />
-            )}
-            <Text
-              style={periodButtonPrimary ? styles.periodButtonText : undefined}
-              variant="label"
+          {!completedPeriodSelected ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void togglePeriod()}
+              style={[
+                styles.periodButton,
+                !periodButtonPrimary && styles.periodButtonInactive,
+              ]}
             >
-              {periodButtonLabel()}
-            </Text>
-          </Pressable>
+              {periodButtonPrimary ? (
+                <CheckCircle
+                  color={theme.colors.companionSurface}
+                  size={18}
+                  weight="fill"
+                />
+              ) : (
+                <Drop
+                  color={theme.colors.companionBerry}
+                  size={18}
+                  weight="duotone"
+                />
+              )}
+              <Text
+                style={
+                  periodButtonPrimary ? styles.periodButtonText : undefined
+                }
+                variant="label"
+              >
+                {periodButtonLabel()}
+              </Text>
+            </Pressable>
+          ) : null}
         </Box>
 
         <Box
@@ -283,6 +223,7 @@ export default function RecordScreen() {
             icon={Drop}
             label="流量"
             onPress={() => openSheet('flow')}
+            recorded={Boolean(draft.flow)}
             value={draft.flow || '未记录'}
           />
           <RecordRow
@@ -290,6 +231,7 @@ export default function RecordScreen() {
             icon={Heartbeat}
             label="痛感"
             onPress={() => openSheet('pain')}
+            recorded={Boolean(draft.pain)}
             value={draft.pain || '未记录'}
           />
           <RecordRow
@@ -298,6 +240,7 @@ export default function RecordScreen() {
             isLast
             label="症状"
             onPress={() => openSheet('symptoms')}
+            recorded={draft.symptoms.length > 0}
             value={draft.symptoms.length ? draft.symptoms.join('、') : '未记录'}
           />
         </Box>
@@ -312,13 +255,6 @@ export default function RecordScreen() {
         onClose={closeSheet}
         onDismiss={() => setActiveKind(null)}
         ref={sheetRef}
-      />
-      <PeriodDetailSheet
-        onCancel={() => periodSheetRef.current?.dismiss()}
-        onConfirm={confirmPeriodEdit}
-        period={periodForEditor}
-        ref={periodSheetRef}
-        selectedDate={selectedDate}
       />
     </Page>
   );

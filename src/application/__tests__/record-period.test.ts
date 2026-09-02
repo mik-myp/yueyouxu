@@ -51,6 +51,27 @@ describe('record period', () => {
     });
   });
 
+  it('removes an open period when it is ended on its start date', async () => {
+    const repositories = repository();
+    const record = createRecordPeriod(
+      repositories,
+      () => new Date('2026-09-05T00:00:00.000Z'),
+    );
+
+    await record({
+      action: 'start',
+      startDate: '2026-09-05',
+      timeZone: 'Asia/Shanghai',
+    });
+    await record({
+      action: 'end',
+      startDate: '2026-09-05',
+      timeZone: 'Asia/Shanghai',
+    });
+
+    expect(await repositories.list()).toEqual([]);
+  });
+
   it('rejects overlapping periods and inverted corrections', async () => {
     const repositories = repository([
       {
