@@ -54,16 +54,43 @@ function addReleaseSigning(contents) {
   );
 }
 
+function enableLegacyPackaging(contents) {
+  if (contents.includes('useLegacyPackaging')) return contents;
+
+  const androidMarker = 'android {\n';
+  const androidIndex = contents.indexOf(androidMarker);
+  if (androidIndex < 0) {
+    throw new Error('Android block was not found');
+  }
+
+  const packagingOptions = [
+    '    packagingOptions {',
+    '        jniLibs {',
+    '            useLegacyPackaging true',
+    '        }',
+    '    }',
+    '',
+  ].join('\n');
+
+  const insertIndex = androidIndex + androidMarker.length;
+  return (
+    contents.slice(0, insertIndex) +
+    packagingOptions +
+    contents.slice(insertIndex)
+  );
+}
+
 module.exports = function withAndroidReleaseSigning(config) {
   return withAppBuildGradle(config, (gradleConfig) => {
     if (gradleConfig.modResults.language !== 'groovy') {
       throw new Error('Android release signing requires a Groovy build.gradle');
     }
-    gradleConfig.modResults.contents = addReleaseSigning(
-      gradleConfig.modResults.contents,
+    gradleConfig.modResults.contents = enableLegacyPackaging(
+      addReleaseSigning(gradleConfig.modResults.contents),
     );
     return gradleConfig;
   });
 };
 
 module.exports.addReleaseSigning = addReleaseSigning;
+module.exports.enableLegacyPackaging = enableLegacyPackaging;

@@ -1,4 +1,7 @@
-const { addReleaseSigning } = require('../with-android-release-signing');
+const {
+  addReleaseSigning,
+  enableLegacyPackaging,
+} = require('../with-android-release-signing');
 
 const buildGradle = `android {
     signingConfigs {
@@ -41,5 +44,20 @@ describe('withAndroidReleaseSigning', () => {
   it('is idempotent', () => {
     const once = addReleaseSigning(buildGradle);
     expect(addReleaseSigning(once)).toBe(once);
+  });
+});
+
+describe('enableLegacyPackaging', () => {
+  it('enables compressed JNI packaging in the Android block', () => {
+    const result = enableLegacyPackaging(buildGradle);
+
+    expect(result).toContain(
+      'packagingOptions {\n        jniLibs {\n            useLegacyPackaging true',
+    );
+  });
+
+  it('is idempotent', () => {
+    const once = enableLegacyPackaging(buildGradle);
+    expect(enableLegacyPackaging(once)).toBe(once);
   });
 });

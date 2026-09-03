@@ -18,12 +18,30 @@ import {
   checkForAndroidUpdate,
   UpdateCheckError,
 } from '@/services/github-release-update';
+import {
+  downloadAndroidApk,
+  installAndroidApk,
+  type ApkDownloadProgress,
+} from '@/services/android-apk-download';
 import { Box, Text, theme } from '@/theme';
 
 type UpdateState =
   | { kind: 'available'; update: AndroidReleaseUpdate }
   | { kind: 'checking' }
   | { kind: 'current'; version: string }
+  | {
+      downloadedBytes: number;
+      fileUri: string;
+      kind: 'ready';
+      totalBytes: number;
+      update: AndroidReleaseUpdate;
+    }
+  | {
+      downloadedBytes: number;
+      kind: 'downloading';
+      totalBytes: number;
+      update: AndroidReleaseUpdate;
+    }
   | { kind: 'error'; message: string }
   | { kind: 'idle' };
 
@@ -67,10 +85,54 @@ export default function AboutScreen() {
 
   const handleDownload = async (update: AndroidReleaseUpdate) => {
     setDownloadError(null);
+
+    if (Platform.OS !== 'android') {
+      try {
+        await Linking.openURL(update.downloadUrl);
+      } catch {
+        setDownloadError('无法打开下载链接，请稍后再试');
+      }
+      return;
+    }
+
+    setUpdateState({
+      downloadedBytes: 0,
+      kind: 'downloading',
+      totalBytes: update.fileSize,
+      update,
+    });
     try {
-      await Linking.openURL(update.downloadUrl);
+      const fileUri = await downloadAndroidApk(update, (progress) => {
+        setUpdateState((current) =>
+          current.kind === 'downloading'
+            ? {
+                ...current,
+                downloadedBytes: progress.downloadedBytes,
+                totalBytes: progress.totalBytes,
+              }
+            : current,
+        );
+      });
+      setUpdateState({
+        downloadedBytes: update.fileSize,
+        fileUri,
+        kind: 'ready',
+        totalBytes: update.fileSize,
+        update,
+      });
+      await installAndroidApk(fileUri);
     } catch {
-      setDownloadError('无法打开下载链接，请稍后再试');
+      setUpdateState({ kind: 'available', update });
+      setDownloadError('下载或打开安装器失败，请稍后重试');
+    }
+  };
+
+  const handleInstall = async (fileUri: string) => {
+    setDownloadError(null);
+    try {
+      await installAndroidApk(fileUri);
+    } catch {
+      setDownloadError('无法打开系统安装器，请稍后重试');
     }
   };
 
@@ -148,6 +210,28 @@ export default function AboutScreen() {
                     />
                   </Box>
                 </>
+              ) : updateState.kind === 'downloading' ? (
+                <DownloadProgressView
+                  downloadedBytes={updateState.downloadedBytes}
+                  totalBytes={updateState.totalBytes}
+                  update={updateState.update}
+                />
+              ) : updateState.kind === 'ready' ? (
+                <>
+                  <Text accessibilityLiveRegion="polite" variant="sectionTitle">
+                    下载完成
+                  </Text>
+                  <Text marginTop="xs" variant="caption">
+                    系统安装器已准备就绪
+                  </Text>
+                  <Box marginTop="m">
+                    <PrimaryButton
+                      icon={DownloadSimple}
+                      label="安装更新"
+                      onPress={() => void handleInstall(updateState.fileUri)}
+                    />
+                  </Box>
+                </>
               ) : (
                 <>
                   {updateState.kind === 'current' ? (
@@ -208,6 +292,44 @@ export default function AboutScreen() {
   );
 }
 
+function DownloadProgressView({
+  downloadedBytes,
+  totalBytes,
+  update,
+}: ApkDownloadProgress & { update: AndroidReleaseUpdate }) {
+  const hasTotal = totalBytes > 0;
+  const progress = hasTotal
+    ? Math.min(1, Math.max(0, downloadedBytes / totalBytes))
+    : null;
+  return (
+    <Box accessibilityLiveRegion="polite">
+      <Text variant="sectionTitle">正在下载 {update.latestVersion}</Text>
+      <Text marginTop="xs" variant="caption">
+        {progress === null
+          ? '下载进行中，切到后台后仍会继续'
+          : `${Math.round(progress * 100)}% · ${formatFileSize(totalBytes)}`}
+      </Text>
+      <Box
+        accessibilityLabel={
+          progress === null
+            ? '下载进度未知'
+            : `下载进度 ${Math.round(progress * 100)}%`
+        }
+        accessibilityRole="progressbar"
+        marginTop="m"
+        style={styles.progressTrack}
+      >
+        <Box
+          style={[
+            styles.progressFill,
+            { width: progress === null ? '35%' : `${progress * 100}%` },
+          ]}
+        />
+      </Box>
+    </Box>
+  );
+}
+
 const styles = StyleSheet.create({
   appIcon: {
     backgroundColor: theme.colors.companionBerryWash,
@@ -231,6 +353,17 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 1,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
+  },
+  progressFill: {
+    backgroundColor: theme.colors.companionBerry,
+    borderRadius: 4,
+    height: '100%',
+  },
+  progressTrack: {
+    backgroundColor: theme.colors.companionCashmere,
+    borderRadius: 4,
+    height: 8,
+    overflow: 'hidden',
   },
   successText: {
     color: theme.colors.companionSage,
