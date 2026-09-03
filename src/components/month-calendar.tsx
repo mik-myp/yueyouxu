@@ -8,13 +8,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
-  ArrowDown,
-  ArrowUp,
   CaretLeft,
   CaretRight,
-  NotePencil,
+  ClipboardText,
   Drop,
-  Selection,
+  PauseCircle,
+  PlayCircle,
   Sparkle,
   Minus,
   type Icon,
@@ -125,14 +124,14 @@ function DayCell({
     actualPeriod && key === actualPeriod.startDate
       ? {
           color: theme.colors.companionButter,
-          icon: ArrowDown,
+          icon: PlayCircle,
           key: 'period-start',
         }
       : null,
     actualPeriod?.endDate === key
       ? {
           color: theme.colors.companionButter,
-          icon: ArrowUp,
+          icon: PauseCircle,
           key: 'period-end',
         }
       : null,
@@ -141,7 +140,7 @@ function DayCell({
           color: actual
             ? theme.colors.companionButter
             : theme.colors.companionOchre,
-          icon: NotePencil,
+          icon: ClipboardText,
           key: 'daily-record',
         }
       : null,
@@ -176,14 +175,17 @@ function DayCell({
               (estimated || predicted) &&
               segmentStart &&
               styles.predictedBandStart,
-            !actual &&
-              (estimated || predicted) &&
-              segmentEnd &&
-              styles.predictedBandEnd,
           ]}
         />
       ) : null}
-      <View style={[styles.dayNumber, isToday && !actual && styles.today]}>
+      <View
+        style={[
+          styles.dayNumber,
+          isToday && !actual && styles.today,
+          selected && styles.selectedDay,
+          selected && actual && styles.selectedDayActual,
+        ]}
+      >
         <View style={styles.markerRow}>
           {markers.map((marker) => (
             <DayStatusMarker {...marker} key={marker.key} />
@@ -198,16 +200,7 @@ function DayCell({
         >
           {date.day}
         </Text>
-        <View style={styles.markerSpacer}>
-          {selected ? (
-            <View
-              style={[
-                styles.selectionMark,
-                actual && styles.selectionMarkActual,
-              ]}
-            />
-          ) : null}
-        </View>
+        <View style={styles.markerSpacer} />
       </View>
     </Pressable>
   );
@@ -407,24 +400,23 @@ export function MonthCalendar({
           label="预测经期"
         />
         <LegendItem
-          backgroundColor={theme.colors.transparent}
           color={theme.colors.companionInk}
-          icon={Selection}
+          indicator="selection"
           label="已选择"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={ArrowDown}
+          icon={PlayCircle}
           label="月经来了"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={ArrowUp}
+          icon={PauseCircle}
           label="月经走了"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={NotePencil}
+          icon={ClipboardText}
           label="已记录"
         />
       </View>
@@ -436,22 +428,28 @@ function LegendItem({
   backgroundColor,
   color,
   icon: LegendIcon,
+  indicator,
   label,
 }: {
   backgroundColor?: string;
   color: string;
-  icon: Icon;
+  icon?: Icon;
+  indicator?: 'selection';
   label: string;
 }) {
   const ResolvedIcon = LegendIcon || Minus;
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendIcon, backgroundColor && { backgroundColor }]}>
-        <ResolvedIcon
-          color={color}
-          size={12}
-          weight={backgroundColor ? 'duotone' : 'fill'}
-        />
+        {indicator === 'selection' ? (
+          <View style={[styles.selectionLegendMark, { borderColor: color }]} />
+        ) : (
+          <ResolvedIcon
+            color={color}
+            size={12}
+            weight={backgroundColor ? 'duotone' : 'fill'}
+          />
+        )}
       </View>
       <Text style={styles.legendText}>{label}</Text>
     </View>
@@ -569,10 +567,6 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.companionBerryOutline,
     borderTopWidth: 1.5,
   },
-  predictedBandEnd: {
-    borderRightColor: theme.colors.companionBerryOutline,
-    borderRightWidth: 1.5,
-  },
   predictedBandStart: {
     borderLeftColor: theme.colors.companionBerryOutline,
     borderLeftWidth: 1.5,
@@ -621,14 +615,17 @@ const styles = StyleSheet.create({
     height: 14,
     justifyContent: 'center',
   },
-  selectionMark: {
-    borderColor: theme.colors.companionInk,
-    borderRadius: 6,
+  selectionLegendMark: {
+    borderRadius: 7,
     borderWidth: 1.5,
-    height: 10,
-    width: 10,
+    height: 14,
+    width: 14,
   },
-  selectionMarkActual: {
+  selectedDay: {
+    borderColor: theme.colors.companionBerry,
+    borderWidth: 2,
+  },
+  selectedDayActual: {
     borderColor: theme.colors.companionButter,
   },
   statusMarker: {

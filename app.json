@@ -2,7 +2,8 @@
   "expo": {
     "name": "月有序",
     "slug": "yueyouxu",
-    "version": "0.1.1",
+    "icon": "./assets/icon.png",
+    "version": "0.1.2",
     "orientation": "portrait",
     "scheme": "yueyouxu",
     "userInterfaceStyle": "light",
@@ -12,7 +13,9 @@
     },
     "android": {
       "package": "com.mikmyp.yueyouxu",
-      "versionCode": 2,
+      "permissions": ["REQUEST_INSTALL_PACKAGES"],
+      "versionCode": 3,
+      "useLegacyPackaging": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
