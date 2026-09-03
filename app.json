@@ -15,7 +15,6 @@
       "package": "com.mikmyp.yueyouxu",
       "permissions": ["REQUEST_INSTALL_PACKAGES"],
       "versionCode": 3,
-      "useLegacyPackaging": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
