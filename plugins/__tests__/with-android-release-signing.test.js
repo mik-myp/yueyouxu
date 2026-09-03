@@ -1,5 +1,6 @@
 const {
   addReleaseSigning,
+  configureReleaseGradleProperties,
   enableLegacyPackaging,
 } = require('../with-android-release-signing');
 
@@ -59,5 +60,40 @@ describe('enableLegacyPackaging', () => {
   it('is idempotent', () => {
     const once = enableLegacyPackaging(buildGradle);
     expect(enableLegacyPackaging(once)).toBe(once);
+  });
+
+  it('overrides the dynamic Expo packaging setting', () => {
+    const generatedBuildGradle = `android {
+    packagingOptions {
+        jniLibs {
+            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
+            useLegacyPackaging enableLegacyPackaging.toBoolean()
+        }
+    }
+}`;
+
+    expect(enableLegacyPackaging(generatedBuildGradle)).toContain(
+      'useLegacyPackaging true',
+    );
+  });
+});
+
+describe('configureReleaseGradleProperties', () => {
+  it('targets arm64 and enables release compression', () => {
+    const result = configureReleaseGradleProperties([
+      { type: 'property', key: 'reactNativeArchitectures', value: 'x86' },
+      { type: 'empty' },
+    ]);
+
+    expect(result).toEqual([
+      { type: 'property', key: 'reactNativeArchitectures', value: 'arm64-v8a' },
+      { type: 'empty' },
+      {
+        type: 'property',
+        key: 'android.enableBundleCompression',
+        value: 'true',
+      },
+      { type: 'property', key: 'expo.useLegacyPackaging', value: 'true' },
+    ]);
   });
 });

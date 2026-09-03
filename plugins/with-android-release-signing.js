@@ -1,6 +1,14 @@
-const { withAppBuildGradle } = require('expo/config-plugins');
+const {
+  withAppBuildGradle,
+  withGradleProperties,
+} = require('expo/config-plugins');
 
 const KEYSTORE_VARIABLE = 'yueyouxuReleaseKeystorePath';
+const RELEASE_GRADLE_PROPERTIES = {
+  'android.enableBundleCompression': 'true',
+  'expo.useLegacyPackaging': 'true',
+  reactNativeArchitectures: 'arm64-v8a',
+};
 
 function addReleaseSigning(contents) {
   if (contents.includes(KEYSTORE_VARIABLE)) return contents;
@@ -55,7 +63,10 @@ function addReleaseSigning(contents) {
 }
 
 function enableLegacyPackaging(contents) {
-  if (contents.includes('useLegacyPackaging')) return contents;
+  const existingPackagingLine = /^(\s*)useLegacyPackaging\s+[^\n]+$/m;
+  if (existingPackagingLine.test(contents)) {
+    return contents.replace(existingPackagingLine, '$1useLegacyPackaging true');
+  }
 
   const androidMarker = 'android {\n';
   const androidIndex = contents.indexOf(androidMarker);
@@ -80,7 +91,27 @@ function enableLegacyPackaging(contents) {
   );
 }
 
+function configureReleaseGradleProperties(properties) {
+  for (const [key, value] of Object.entries(RELEASE_GRADLE_PROPERTIES)) {
+    const existing = properties.find(
+      (item) => item.type === 'property' && item.key === key,
+    );
+    if (existing) {
+      existing.value = value;
+    } else {
+      properties.push({ type: 'property', key, value });
+    }
+  }
+  return properties;
+}
+
 module.exports = function withAndroidReleaseSigning(config) {
+  config = withGradleProperties(config, (gradlePropertiesConfig) => {
+    gradlePropertiesConfig.modResults = configureReleaseGradleProperties(
+      gradlePropertiesConfig.modResults,
+    );
+    return gradlePropertiesConfig;
+  });
   return withAppBuildGradle(config, (gradleConfig) => {
     if (gradleConfig.modResults.language !== 'groovy') {
       throw new Error('Android release signing requires a Groovy build.gradle');
@@ -93,4 +124,6 @@ module.exports = function withAndroidReleaseSigning(config) {
 };
 
 module.exports.addReleaseSigning = addReleaseSigning;
+module.exports.configureReleaseGradleProperties =
+  configureReleaseGradleProperties;
 module.exports.enableLegacyPackaging = enableLegacyPackaging;
