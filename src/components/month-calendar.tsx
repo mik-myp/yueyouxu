@@ -8,14 +8,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
+  ArrowDown,
+  ArrowUp,
   CaretLeft,
   CaretRight,
-  ClipboardText,
+  NotePencil,
   Drop,
-  Minus,
-  Pause,
-  Play,
+  Selection,
   Sparkle,
+  Minus,
   type Icon,
 } from '@/components/soft-icons';
 import { formatLocalDate } from '@/domain/local-date';
@@ -79,7 +80,7 @@ function DayCell({
   const actualPeriod = periods.find((period) =>
     period.endDate
       ? inRange(key, period.startDate, period.endDate)
-      : key === period.startDate,
+      : key >= period.startDate && key <= today,
   );
   const actual = Boolean(actualPeriod);
   const estimatedPeriodRange = estimatedPeriodRanges.find((range) =>
@@ -95,7 +96,7 @@ function DayCell({
   const range = actualPeriod
     ? {
         start: actualPeriod.startDate,
-        end: actualPeriod.endDate ?? actualPeriod.startDate,
+        end: actualPeriod.endDate ?? today,
       }
     : estimatedPeriodRange && estimated
       ? estimatedPeriodRange
@@ -124,14 +125,14 @@ function DayCell({
     actualPeriod && key === actualPeriod.startDate
       ? {
           color: theme.colors.companionButter,
-          icon: Play,
+          icon: ArrowDown,
           key: 'period-start',
         }
       : null,
     actualPeriod?.endDate === key
       ? {
           color: theme.colors.companionButter,
-          icon: Pause,
+          icon: ArrowUp,
           key: 'period-end',
         }
       : null,
@@ -140,7 +141,7 @@ function DayCell({
           color: actual
             ? theme.colors.companionButter
             : theme.colors.companionOchre,
-          icon: ClipboardText,
+          icon: NotePencil,
           key: 'daily-record',
         }
       : null,
@@ -219,9 +220,10 @@ function DayStatusMarker({
   color: string;
   icon: Icon;
 }) {
+  const ResolvedIcon = StatusIcon || Minus;
   return (
     <View style={styles.statusMarker}>
-      <StatusIcon color={color} size={11} weight="fill" />
+      <ResolvedIcon color={color} size={11} weight="fill" />
     </View>
   );
 }
@@ -373,6 +375,24 @@ export function MonthCalendar({
           />
         </Animated.View>
       </View>
+      {visibleMonth.slice(0, 7) !== today.slice(0, 7) ? (
+        <Pressable
+          accessibilityLabel="回到今天"
+          accessibilityRole="button"
+          onPress={() => {
+            const nextMonth = `${today.slice(0, 7)}-01`;
+            setDirection(nextMonth > visibleMonth ? 1 : -1);
+            setVisibleMonth(nextMonth);
+            onSelectDate(today);
+          }}
+          style={({ pressed }) => [
+            styles.todayButton,
+            pressed && styles.dayCellPressed,
+          ]}
+        >
+          <Text style={styles.todayButtonText}>回到今天</Text>
+        </Pressable>
+      ) : null}
       <View style={styles.legend}>
         <LegendItem
           backgroundColor={theme.colors.companionBerry}
@@ -389,22 +409,22 @@ export function MonthCalendar({
         <LegendItem
           backgroundColor={theme.colors.transparent}
           color={theme.colors.companionInk}
-          icon={Minus}
+          icon={Selection}
           label="已选择"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={Play}
+          icon={ArrowDown}
           label="月经来了"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={Pause}
+          icon={ArrowUp}
           label="月经走了"
         />
         <LegendItem
           color={theme.colors.companionOchre}
-          icon={ClipboardText}
+          icon={NotePencil}
           label="已记录"
         />
       </View>
@@ -423,10 +443,11 @@ function LegendItem({
   icon: Icon;
   label: string;
 }) {
+  const ResolvedIcon = LegendIcon || Minus;
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendIcon, backgroundColor && { backgroundColor }]}>
-        <LegendIcon
+        <ResolvedIcon
           color={color}
           size={12}
           weight={backgroundColor ? 'duotone' : 'fill'}
@@ -528,6 +549,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
+  todayButton: {
+    alignSelf: 'flex-end',
+    marginRight: 26,
+    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  todayButtonText: {
+    color: theme.colors.companionBerry,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
   predictedBand: {
     backgroundColor: theme.colors.companionBerryWash,
     borderBottomColor: theme.colors.companionBerryOutline,
@@ -588,13 +622,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   selectionMark: {
-    backgroundColor: theme.colors.companionInk,
-    borderRadius: 2,
-    height: 3,
-    width: 12,
+    borderColor: theme.colors.companionInk,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    height: 10,
+    width: 10,
   },
   selectionMarkActual: {
-    backgroundColor: theme.colors.companionButter,
+    borderColor: theme.colors.companionButter,
   },
   statusMarker: {
     alignItems: 'center',
