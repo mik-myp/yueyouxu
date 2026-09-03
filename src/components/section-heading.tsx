@@ -21,21 +21,23 @@ export function SectionHeading({
       <Box alignItems="center" flexDirection="row" gap="s">
         <Box style={styles.marker} />
         <Text variant="sectionTitle">{title}</Text>
-        {extra}
       </Box>
-      {action ? (
-        onActionPress ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={onActionPress}
-            style={({ pressed }) => [pressed && styles.pressed]}
-          >
+      <Box alignItems="center" flexDirection="row" gap="m">
+        {extra}
+        {action ? (
+          onActionPress ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onActionPress}
+              style={({ pressed }) => [pressed && styles.pressed]}
+            >
+              <Text style={styles.action}>{action}</Text>
+            </Pressable>
+          ) : (
             <Text style={styles.action}>{action}</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.action}>{action}</Text>
-        )
-      ) : null}
+          )
+        ) : null}
+      </Box>
     </Box>
   );
 }

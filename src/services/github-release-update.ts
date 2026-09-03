@@ -1,5 +1,9 @@
 const GITHUB_LATEST_RELEASE_URL =
   'https://api.github.com/repos/mik-myp/yueyouxu/releases/latest';
+const GITHUB_RELEASE_PAGE_URL =
+  'https://github.com/mik-myp/yueyouxu/releases/latest';
+const GITHUB_RELEASE_ASSETS_URL =
+  'https://github.com/mik-myp/yueyouxu/releases/expanded_assets';
 
 type GithubReleaseAsset = {
   browser_download_url?: unknown;
@@ -77,6 +81,124 @@ function isGithubDownloadUrl(value: string): boolean {
   }
 }
 
+function releaseTagFromUrl(value: string): string | null {
+  try {
+    const url = new URL(value, 'https://github.com');
+    const match = url.pathname.match(
+      /^\/mik-myp\/yueyouxu\/releases\/tag\/(v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][^/]+)?)$/i,
+    );
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function extractReleaseTag(page: string): string | null {
+  const candidates = [
+    page.match(
+      /<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)/i,
+    )?.[1],
+    page.match(/href=["']([^"']*\/releases\/tag\/v?[0-9.]+[^"']*)["']/i)?.[1],
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const tag = releaseTagFromUrl(candidate);
+    if (tag) return tag;
+  }
+  return null;
+}
+
+function extractApkUrl(page: string, tag: string): string | null {
+  const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = page.match(
+    new RegExp(
+      `href=["']((?:https:\\/\\/github\\.com)?\\/mik-myp\\/yueyouxu\\/releases\\/download\\/${escapedTag}\\/[^"'<>\\s]+\\.apk)["']`,
+      'i',
+    ),
+  );
+  if (!match) return null;
+  const url = match[1].startsWith('https://')
+    ? match[1]
+    : `https://github.com${match[1]}`;
+  if (!isGithubDownloadUrl(url)) return null;
+  return url.replace(/&amp;/g, '&');
+}
+
+async function checkViaReleasePage(
+  currentVersion: string,
+  fetchImpl: typeof fetch,
+): Promise<AndroidReleaseUpdate> {
+  let pageResponse: Response;
+  try {
+    pageResponse = await fetchImpl(GITHUB_RELEASE_PAGE_URL, {
+      headers: { Accept: 'text/html' },
+    });
+  } catch {
+    throw new UpdateCheckError('request-failed', 'Unable to reach GitHub');
+  }
+  if (pageResponse.status === 404) {
+    throw new UpdateCheckError('not-found', 'No public release is available');
+  }
+  if (!pageResponse.ok) {
+    throw new UpdateCheckError(
+      'request-failed',
+      `GitHub returned ${pageResponse.status}`,
+    );
+  }
+
+  const page =
+    typeof pageResponse.text === 'function' ? await pageResponse.text() : '';
+  const latestTag =
+    (typeof pageResponse.url === 'string' &&
+      releaseTagFromUrl(pageResponse.url)) ||
+    extractReleaseTag(page);
+  if (!latestTag) {
+    throw new UpdateCheckError('invalid-release', 'Release tag is missing');
+  }
+
+  let assetsResponse: Response;
+  try {
+    assetsResponse = await fetchImpl(
+      `${GITHUB_RELEASE_ASSETS_URL}/${encodeURIComponent(latestTag)}`,
+      { headers: { Accept: 'text/html' } },
+    );
+  } catch {
+    throw new UpdateCheckError('request-failed', 'Unable to reach GitHub');
+  }
+  if (!assetsResponse.ok) {
+    throw new UpdateCheckError(
+      'request-failed',
+      `GitHub returned ${assetsResponse.status}`,
+    );
+  }
+  const assetPage =
+    typeof assetsResponse.text === 'function'
+      ? await assetsResponse.text()
+      : '';
+  const downloadUrl = extractApkUrl(assetPage, latestTag);
+  if (!downloadUrl) {
+    throw new UpdateCheckError(
+      'missing-apk',
+      'Release has no trusted APK asset',
+    );
+  }
+
+  const latestVersion = normalizeVersion(latestTag);
+  const normalizedCurrentVersion = normalizeVersion(currentVersion);
+  if (!latestVersion || !normalizedCurrentVersion) {
+    throw new UpdateCheckError('invalid-release', 'Release version is invalid');
+  }
+  return {
+    available: isNewerVersion(latestVersion, normalizedCurrentVersion),
+    downloadUrl,
+    fileName: decodeURIComponent(downloadUrl.split('/').pop() ?? 'update.apk'),
+    fileSize: 0,
+    latestVersion,
+    publishedAt: null,
+    releaseUrl: `https://github.com/mik-myp/yueyouxu/releases/tag/${latestTag}`,
+  };
+}
+
 export async function checkForAndroidUpdate(
   currentVersion: string,
   fetchImpl: typeof fetch = fetch,
@@ -102,7 +224,7 @@ export async function checkForAndroidUpdate(
     throw new UpdateCheckError('not-found', 'No public release is available');
   }
   if (response.status === 403 || response.status === 429) {
-    throw new UpdateCheckError('rate-limited', 'GitHub rate limit reached');
+    return checkViaReleasePage(currentVersion, fetchImpl);
   }
   if (!response.ok) {
     throw new UpdateCheckError(

@@ -3,7 +3,7 @@
     "name": "月有序",
     "slug": "yueyouxu",
     "icon": "./assets/icon.png",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "orientation": "portrait",
     "scheme": "yueyouxu",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     "android": {
       "package": "com.mikmyp.yueyouxu",
       "permissions": ["REQUEST_INSTALL_PACKAGES"],
-      "versionCode": 4,
+      "versionCode": 5,
       "predictiveBackGestureEnabled": false
     },
     "web": {

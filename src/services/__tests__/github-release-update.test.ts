@@ -84,6 +84,37 @@ describe('GitHub Android release updates', () => {
     ).rejects.toMatchObject<Partial<UpdateCheckError>>({ code: 'not-found' });
   });
 
+  it('falls back to the public release page when the API is rate limited', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(githubResponse({}, 403))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: jest.fn().mockResolvedValue('<html>latest release</html>'),
+        url: 'https://github.com/mik-myp/yueyouxu/releases/tag/v0.2.0',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: jest
+          .fn()
+          .mockResolvedValue(
+            '<a href="/mik-myp/yueyouxu/releases/download/v0.2.0/yueyouxu-v0.2.0.apk">APK</a>',
+          ),
+      });
+
+    await expect(checkForAndroidUpdate('0.1.0', fetchImpl)).resolves.toEqual({
+      available: true,
+      downloadUrl: apkAsset.browser_download_url,
+      fileName: apkAsset.name,
+      fileSize: 0,
+      latestVersion: '0.2.0',
+      publishedAt: null,
+      releaseUrl: 'https://github.com/mik-myp/yueyouxu/releases/tag/v0.2.0',
+    });
+  });
+
   it('reports a network failure without exposing fetch details', async () => {
     const fetchImpl = jest.fn().mockRejectedValue(new Error('offline'));
     await expect(

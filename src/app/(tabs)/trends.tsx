@@ -14,6 +14,7 @@ import {
   StyleSheet,
   View,
   type LayoutChangeEvent,
+  type TextLayoutEvent,
 } from 'react-native';
 import Popover, {
   PopoverMode,
@@ -133,32 +134,25 @@ export default function TrendsScreen() {
         </Box>
 
         <Box marginTop="xxl" style={styles.dailyObservationSection}>
-          <Box
-            alignItems="center"
-            flexDirection="row"
-            justifyContent="space-between"
-            paddingHorizontal="page"
-          >
-            <Box flex={1}>
-              <SectionHeading
-                title="每日观察"
-                extra={
-                  <Pressable
-                    accessibilityLabel="每日观察说明"
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: dailyNoteVisible }}
-                    onPress={() => setDailyNoteVisible((visible) => !visible)}
-                    ref={noteButtonRef}
-                    style={({ pressed }) => [
-                      styles.noteButton,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <WarningCircle color={theme.colors.textMuted} size={20} />
-                  </Pressable>
-                }
-              />
-            </Box>
+          <Box paddingHorizontal="page">
+            <SectionHeading
+              title="每日观察"
+              extra={
+                <Pressable
+                  accessibilityLabel="每日观察说明"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: dailyNoteVisible }}
+                  onPress={() => setDailyNoteVisible((visible) => !visible)}
+                  ref={noteButtonRef}
+                  style={({ pressed }) => [
+                    styles.noteButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <WarningCircle color={theme.colors.textMuted} size={20} />
+                </Pressable>
+              }
+            />
           </Box>
           <Box style={styles.analysisGroup}>
             <AnalysisRow
@@ -314,7 +308,15 @@ function MethodTicker() {
   }
 
   function handleTrackLayout(event: LayoutChangeEvent) {
-    setTrackWidth(event.nativeEvent.layout.width);
+    setTrackWidth((width) => Math.max(width, event.nativeEvent.layout.width));
+  }
+
+  function handleTextLayout(event: TextLayoutEvent) {
+    const width = event.nativeEvent.lines.reduce(
+      (maximum, line) => Math.max(maximum, line.width),
+      0,
+    );
+    if (width > 0) setTrackWidth((current) => Math.max(current, width));
   }
 
   return (
@@ -325,7 +327,11 @@ function MethodTicker() {
           onLayout={handleTrackLayout}
           style={[styles.methodTickerTrack, { transform: [{ translateX }] }]}
         >
-          <Text numberOfLines={1} style={styles.methodTickerText}>
+          <Text
+            numberOfLines={1}
+            onTextLayout={handleTextLayout}
+            style={styles.methodTickerText}
+          >
             {methodTickerText}
           </Text>
         </Animated.View>
@@ -511,10 +517,13 @@ const styles = StyleSheet.create({
   methodTickerText: {
     color: theme.colors.textSecondary,
     fontSize: 13,
+    flexShrink: 0,
     lineHeight: 20,
   },
   methodTickerTrack: {
     alignSelf: 'flex-start',
+    flexGrow: 0,
+    flexShrink: 0,
   },
   methodTickerViewport: {
     flex: 1,

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet } from 'react-native';
 
 import {
@@ -19,9 +19,12 @@ import {
   UpdateCheckError,
 } from '@/services/github-release-update';
 import {
-  downloadAndroidApk,
+  getDownloadSnapshot,
   installAndroidApk,
+  startAndroidApkDownload,
+  subscribeDownload,
   type ApkDownloadProgress,
+  type ApkDownloadSnapshot,
 } from '@/services/android-apk-download';
 import { Box, Text, theme } from '@/theme';
 
@@ -61,11 +64,34 @@ function updateErrorMessage(error: unknown): string {
   return '更新信息不可用，请稍后再试';
 }
 
+function updateStateFromDownload(
+  snapshot: ApkDownloadSnapshot,
+): UpdateState | null {
+  if (snapshot.kind === 'downloading') return snapshot;
+  if (snapshot.kind === 'ready') return snapshot;
+  if (snapshot.kind === 'error') {
+    return { kind: 'available', update: snapshot.update };
+  }
+  return null;
+}
+
 export default function AboutScreen() {
-  const [updateState, setUpdateState] = useState<UpdateState>({ kind: 'idle' });
+  const [updateState, setUpdateState] = useState<UpdateState>(() => {
+    return updateStateFromDownload(getDownloadSnapshot()) ?? { kind: 'idle' };
+  });
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const supportsAndroidUpdates =
     Platform.OS === 'android' || Platform.OS === 'web';
+
+  useEffect(() => {
+    return subscribeDownload((snapshot) => {
+      const nextState = updateStateFromDownload(snapshot);
+      if (!nextState) return;
+      setUpdateState(nextState);
+      if (snapshot.kind === 'error')
+        setDownloadError('下载或打开安装器失败，请稍后重试');
+    });
+  }, []);
 
   const handleCheckForUpdate = async () => {
     if (updateState.kind === 'checking') return;
@@ -102,27 +128,12 @@ export default function AboutScreen() {
       update,
     });
     try {
-      const fileUri = await downloadAndroidApk(update, (progress) => {
-        setUpdateState((current) =>
-          current.kind === 'downloading'
-            ? {
-                ...current,
-                downloadedBytes: progress.downloadedBytes,
-                totalBytes: progress.totalBytes,
-              }
-            : current,
-        );
-      });
-      setUpdateState({
-        downloadedBytes: update.fileSize,
-        fileUri,
-        kind: 'ready',
-        totalBytes: update.fileSize,
-        update,
-      });
+      const fileUri = await startAndroidApkDownload(update);
       await installAndroidApk(fileUri);
     } catch {
-      setUpdateState({ kind: 'available', update });
+      setUpdateState((current) =>
+        current.kind === 'available' ? current : { kind: 'available', update },
+      );
       setDownloadError('下载或打开安装器失败，请稍后重试');
     }
   };
