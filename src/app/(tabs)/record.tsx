@@ -43,7 +43,13 @@ export default function RecordScreen() {
       (period) => period.endDate === null && period.startDate <= selectedDate,
     )
     .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
-  const periodToEnd = selectedPeriod ?? openPeriodForSelectedDate;
+  const periodToReopen =
+    selectedPeriod?.endDate && selectedDate === selectedPeriod.endDate
+      ? selectedPeriod
+      : null;
+  const periodToEnd = periodToReopen
+    ? null
+    : (selectedPeriod ?? openPeriodForSelectedDate);
   const estimatedPeriodRanges = getEstimatedPeriodRanges(
     periods,
     referencePeriodLength,
@@ -96,8 +102,8 @@ export default function RecordScreen() {
     setActionError(null);
     try {
       await recordPeriod({
-        action: periodToEnd ? 'end' : 'start',
-        periodId: periodToEnd?.id,
+        action: periodToEnd || periodToReopen ? 'end' : 'start',
+        periodId: periodToEnd?.id ?? periodToReopen?.id,
         startDate: selectedDate,
         timeZone: currentTimeZone(),
       });
@@ -135,6 +141,7 @@ export default function RecordScreen() {
   }
 
   function periodButtonLabel() {
+    if (periodToReopen) return '月经来了';
     if (periodToEnd) return '月经走了';
     return '月经来了';
   }

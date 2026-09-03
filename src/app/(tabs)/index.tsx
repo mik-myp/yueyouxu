@@ -1,6 +1,5 @@
-import { useRouter } from 'expo-router';
 import {
-  ArrowRight,
+  CaretRight,
   CalendarPlus,
   Drop,
   Heart,
@@ -8,12 +7,14 @@ import {
   Sparkle,
   type Icon,
 } from '@/components/soft-icons';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { CycleArc } from '@/components/cycle-arc';
 import { Page } from '@/components/page';
 import { PrimaryButton } from '@/components/primary-button';
+import { RecordDetailSheet } from '@/components/record-detail-sheet';
 import { SectionHeading } from '@/components/section-heading';
 import { useAppData } from '@/data/app-data-provider';
 import {
@@ -21,26 +22,37 @@ import {
   differenceInLocalDays,
   formatLocalDate,
 } from '@/domain/local-date';
+import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
 import { Box, Text, theme } from '@/theme';
 
 export default function TodayScreen() {
   const today = formatLocalDate(new Date());
-  const router = useRouter();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const [activeKind, setActiveKind] = useState<RecordKind | null>(null);
+  const [recordError, setRecordError] = useState<string | null>(null);
   const {
     dailyRecords,
     periods,
     prediction,
     recordPeriod,
+    saveDailyRecord,
     settings,
     undoPeriod,
   } = useAppData();
   const todayRecord = dailyRecords.find(
     (record) => record.recordDate === today,
   );
+  const [draft, setDraft] = useState<DailyRecordDraft>(() =>
+    todayRecord ? toDraft(todayRecord) : emptyDraft(),
+  );
   const activePeriod = periods
     .filter((period) => period.startDate <= today)
     .sort((left, right) => right.startDate.localeCompare(left.startDate))[0];
   const periodActive = Boolean(activePeriod && activePeriod.endDate === null);
+  const periodToReopen = activePeriod?.endDate === today ? activePeriod : null;
+  const actualPeriodLength = activePeriod?.endDate
+    ? differenceInLocalDays(activePeriod.startDate, activePeriod.endDate) + 1
+    : null;
   const [lastAction, setLastAction] = useState<{
     id: string;
     wasStart: boolean;
@@ -54,6 +66,9 @@ export default function TodayScreen() {
       : (settings?.referenceCycleLength ?? 28);
   const predictionLabel = prediction
     ? `${formatShortDate(prediction.earliestDate)}～${formatShortDate(prediction.latestDate)}`
+    : undefined;
+  const daysUntilPrediction = prediction
+    ? differenceInLocalDays(today, prediction.centerDate)
     : undefined;
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -71,21 +86,27 @@ export default function TodayScreen() {
     const deletesSameDay = Boolean(
       wasActive && activePeriod?.startDate === today,
     );
+    const reopensToday = Boolean(!wasActive && periodToReopen);
     try {
       const period = await recordPeriod({
-        action: wasActive ? 'end' : 'start',
+        action: wasActive || reopensToday ? 'end' : 'start',
+        periodId: reopensToday ? periodToReopen?.id : undefined,
         startDate: today,
         timeZone: currentTimeZone(),
       });
       setLastAction(
-        deletesSameDay ? null : { id: period.id, wasStart: !wasActive },
+        deletesSameDay || reopensToday
+          ? null
+          : { id: period.id, wasStart: !wasActive },
       );
       setToastMessage(
         deletesSameDay
           ? '已取消本次经期'
-          : wasActive
-            ? '已标记月经走了'
-            : '已标记月经开始',
+          : reopensToday
+            ? '已重新标记月经开始'
+            : wasActive
+              ? '已标记月经走了'
+              : '已标记月经开始',
       );
       setToastVisible(true);
     } catch {
@@ -100,6 +121,30 @@ export default function TodayScreen() {
     await undoPeriod(lastAction.id, lastAction.wasStart);
     setToastVisible(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }
+
+  function openRecord(kind: RecordKind) {
+    setRecordError(null);
+    setDraft(todayRecord ? toDraft(todayRecord) : emptyDraft());
+    setActiveKind(kind);
+    requestAnimationFrame(() => sheetRef.current?.present());
+  }
+
+  function saveDraft(nextDraft: DailyRecordDraft) {
+    setDraft(nextDraft);
+    void saveDailyRecord({
+      record: {
+        flow: nextDraft.flow || null,
+        pain: nextDraft.pain || null,
+        symptoms: nextDraft.symptoms,
+        timeZone: currentTimeZone(),
+      },
+      recordDate: today,
+    }).catch((error) => {
+      setRecordError(
+        error instanceof Error ? error.message : '每日记录保存失败',
+      );
+    });
   }
 
   return (
@@ -119,8 +164,12 @@ export default function TodayScreen() {
             cycleLength={cycleLength}
             periodActive={periodActive}
             periodLength={
-              prediction?.periodLength ?? settings?.referencePeriodLength ?? 5
+              actualPeriodLength ??
+              prediction?.periodLength ??
+              settings?.referencePeriodLength ??
+              5
             }
+            daysUntilPrediction={daysUntilPrediction}
             predictionLabel={predictionLabel}
           />
         </Box>
@@ -131,14 +180,6 @@ export default function TodayScreen() {
             label={periodActive ? '月经走了' : '月经来了'}
             onPress={() => void togglePeriod()}
           />
-          {periodActive ? (
-            <PrimaryButton
-              icon={Drop}
-              label="记录今天"
-              onPress={() => router.push('/record')}
-              tone="neutral"
-            />
-          ) : null}
         </Box>
 
         <Box marginTop="xxl" gap="m">
@@ -159,6 +200,7 @@ export default function TodayScreen() {
               accent={theme.colors.companionBerry}
               icon={Drop}
               label="流量"
+              onPress={() => openRecord('flow')}
               recorded={Boolean(todayRecord?.flow)}
               value={todayRecord?.flow ?? '未记录'}
             />
@@ -166,6 +208,7 @@ export default function TodayScreen() {
               accent={theme.colors.companionApricot}
               icon={Heartbeat}
               label="痛感"
+              onPress={() => openRecord('pain')}
               recorded={Boolean(todayRecord?.pain)}
               value={todayRecord?.pain ?? '未记录'}
             />
@@ -173,27 +216,27 @@ export default function TodayScreen() {
               accent={theme.colors.companionLavender}
               icon={Sparkle}
               label="症状"
+              onPress={() => openRecord('symptoms')}
               recorded={Boolean(todayRecord?.symptoms.length)}
               value={todayRecord?.symptoms.join('、') || '未记录'}
             />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/record')}
-              style={({ pressed }) => [
-                styles.allRecords,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.allRecordsText}>查看和修改记录</Text>
-              <ArrowRight
-                color={theme.colors.companionBerry}
-                size={18}
-                weight="bold"
-              />
-            </Pressable>
           </Box>
+          {recordError ? (
+            <Text style={styles.errorText}>{recordError}</Text>
+          ) : null}
         </Box>
       </ScrollView>
+
+      <RecordDetailSheet
+        activeKind={activeKind}
+        draft={draft}
+        key={activeKind ?? 'closed'}
+        onChange={setDraft}
+        onConfirm={saveDraft}
+        onClose={() => sheetRef.current?.dismiss()}
+        onDismiss={() => setActiveKind(null)}
+        ref={sheetRef}
+      />
 
       {toastVisible ? (
         <Box bottom={18} left={20} position="absolute" right={20}>
@@ -259,10 +302,27 @@ function formatFullDate(value: string) {
   return `${year}年${month}月${day}日 · ${weekday}`;
 }
 
+function emptyDraft(): DailyRecordDraft {
+  return { flow: '', pain: '', symptoms: [] };
+}
+
+function toDraft(record: {
+  flow: string | null;
+  pain: string | null;
+  symptoms: string[];
+}): DailyRecordDraft {
+  return {
+    flow: record.flow ?? '',
+    pain: record.pain ?? '',
+    symptoms: record.symptoms,
+  };
+}
+
 type SummaryRowProps = {
   accent: string;
   icon: Icon;
   label: string;
+  onPress: () => void;
   recorded: boolean;
   value: string;
 };
@@ -271,57 +331,55 @@ function SummaryRow({
   accent,
   icon: Icon,
   label,
+  onPress,
   recorded,
   value,
 }: SummaryRowProps) {
   return (
-    <Box
-      alignItems="center"
-      borderBottomColor="companionCashmereStrong"
-      borderBottomWidth={StyleSheet.hairlineWidth}
-      flexDirection="row"
-      minHeight={68}
-      paddingHorizontal="page"
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.summaryRow, pressed && styles.pressed]}
     >
       <Box
         alignItems="center"
-        height={38}
-        justifyContent="center"
-        style={[styles.summaryIcon, { backgroundColor: `${accent}14` }]}
-        width={38}
+        borderBottomColor="companionCashmereStrong"
+        borderBottomWidth={StyleSheet.hairlineWidth}
+        flexDirection="row"
+        minHeight={68}
+        paddingHorizontal="page"
       >
-        <Icon color={accent} size={20} weight="duotone" />
+        <Box
+          alignItems="center"
+          height={38}
+          justifyContent="center"
+          style={[styles.summaryIcon, { backgroundColor: `${accent}14` }]}
+          width={38}
+        >
+          <Icon color={accent} size={20} weight="duotone" />
+        </Box>
+        <Text marginLeft="m" variant="label">
+          {label}
+        </Text>
+        <Box flex={1} />
+        <Box alignItems="center" flexDirection="row" gap="s" maxWidth="48%">
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.summaryValue,
+              recorded ? { color: accent } : styles.summaryValueEmpty,
+            ]}
+          >
+            {value}
+          </Text>
+          <CaretRight color={theme.colors.textMuted} size={17} weight="bold" />
+        </Box>
       </Box>
-      <Text marginLeft="m" variant="label">
-        {label}
-      </Text>
-      <Box flex={1} />
-      <Text
-        style={[
-          styles.summaryValue,
-          recorded ? { color: accent } : styles.summaryValueEmpty,
-        ]}
-      >
-        {value}
-      </Text>
-    </Box>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  allRecords: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 58,
-    paddingHorizontal: 20,
-  },
-  allRecordsText: {
-    color: theme.colors.companionBerry,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 22,
-  },
   content: {
     paddingBottom: 44,
   },
@@ -331,6 +389,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     fontWeight: '600',
     lineHeight: 26,
+  },
+  errorText: {
+    color: theme.colors.periodAction,
+    fontSize: 13,
+    lineHeight: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
   },
   pressed: {
     opacity: 0.6,
@@ -345,6 +410,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 1,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
+  },
+  summaryRow: {
+    minHeight: 68,
   },
   summaryValue: {
     color: theme.colors.companionInk,

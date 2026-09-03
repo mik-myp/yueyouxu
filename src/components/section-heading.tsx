@@ -7,18 +7,21 @@ type SectionHeadingProps = {
   action?: ReactNode;
   onActionPress?: () => void;
   title: string;
+  extra?: ReactNode;
 };
 
 export function SectionHeading({
   action,
   onActionPress,
   title,
+  extra,
 }: SectionHeadingProps) {
   return (
     <Box alignItems="center" flexDirection="row" justifyContent="space-between">
       <Box alignItems="center" flexDirection="row" gap="s">
         <Box style={styles.marker} />
         <Text variant="sectionTitle">{title}</Text>
+        {extra}
       </Box>
       {action ? (
         onActionPress ? (

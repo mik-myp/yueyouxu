@@ -23,6 +23,7 @@ import {
   type Icon,
 } from '@/components/soft-icons';
 import type { DailyRecordDraft, RecordKind } from '@/features/prototype/types';
+import { toggleSingleRecordOption } from '@/features/prototype/record-selection';
 import { Box, Text, theme } from '@/theme';
 
 const labels: Record<RecordKind, string> = {
@@ -122,7 +123,10 @@ export const RecordDetailSheet = forwardRef<
       return;
     }
 
-    setPendingDraft({ ...pendingDraft, [activeKind]: option });
+    setPendingDraft({
+      ...pendingDraft,
+      [activeKind]: toggleSingleRecordOption(selected as string, option),
+    });
   }
 
   function confirmChanges() {

@@ -8,12 +8,14 @@ import { PrimaryButton } from '@/components/primary-button';
 import { SettingsDetailHeader } from '@/components/settings-detail-header';
 import { SoftToggle } from '@/components/soft-toggle';
 import { useAppData } from '@/data/app-data-provider';
+import type { CycleHistoryAnalysis } from '@/domain/cycle-analysis';
 import type { AppSettings, PredictionSettings } from '@/domain/models';
 import { Box, Text, theme } from '@/theme';
 
 export default function CycleSettingsScreen() {
   const router = useRouter();
-  const { error, loading, savePredictionSettings, settings } = useAppData();
+  const { analysis, error, loading, savePredictionSettings, settings } =
+    useAppData();
 
   if (loading) {
     return (
@@ -45,6 +47,7 @@ export default function CycleSettingsScreen() {
   return (
     <CycleSettingsForm
       initialSettings={settings}
+      cycleAnalysis={analysis?.cycle}
       onSave={savePredictionSettings}
       onSaved={() => router.back()}
     />
@@ -52,10 +55,12 @@ export default function CycleSettingsScreen() {
 }
 
 function CycleSettingsForm({
+  cycleAnalysis,
   initialSettings,
   onSave,
   onSaved,
 }: {
+  cycleAnalysis?: CycleHistoryAnalysis;
   initialSettings: AppSettings;
   onSave: (settings: PredictionSettings) => Promise<void>;
   onSaved: () => void;
@@ -71,6 +76,24 @@ function CycleSettingsForm({
   );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const calculatedCycleLength =
+    automatic && cycleAnalysis?.typicalCycleLength
+      ? cycleAnalysis.typicalCycleLength
+      : cycleLength;
+  const calculatedPeriodLength =
+    automatic && cycleAnalysis?.typicalPeriodLength
+      ? cycleAnalysis.typicalPeriodLength
+      : periodLength;
+  const cycleBasisSource = automatic
+    ? cycleAnalysis?.typicalCycleLength
+      ? `最近 ${cycleAnalysis.cycleSamples.length} 个有效间隔的中位数`
+      : '需要至少两个经期开始日'
+    : '使用固定数值';
+  const periodBasisSource = automatic
+    ? cycleAnalysis?.typicalPeriodLength
+      ? `最近 ${cycleAnalysis.periodLengths.length} 条完整经期记录的中位数`
+      : '需要已记录经期结束日'
+    : '使用固定数值';
 
   async function save() {
     setSaving(true);
@@ -120,18 +143,14 @@ function CycleSettingsForm({
           <Box style={styles.controlGroup}>
             <BasisRow
               label="周期长度"
-              source={
-                automatic ? '完整记录不足，使用初始参考值' : '使用固定数值'
-              }
-              value={cycleLength}
+              source={cycleBasisSource}
+              value={calculatedCycleLength}
             />
             <BasisRow
               isLast
               label="经期长度"
-              source={
-                automatic ? '完整记录不足，使用初始参考值' : '使用固定数值'
-              }
-              value={periodLength}
+              source={periodBasisSource}
+              value={calculatedPeriodLength}
             />
           </Box>
         </Box>
@@ -163,7 +182,7 @@ function CycleSettingsForm({
           <Box style={styles.rangeNote}>
             <Text variant="caption">
               {automatic
-                ? '完整记录少于 3 个周期时，使用初始参考值进行预测。'
+                ? '至少记录两个经期开始日后，周期基准会根据有效间隔自动计算；经期长度需要已记录结束日。'
                 : '关闭自动计算后，预测始终使用固定数值。'}
             </Text>
           </Box>

@@ -1,17 +1,37 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Component,
+  type RefObject,
+} from 'react';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
+import Popover, {
+  PopoverMode,
+  PopoverPlacement,
+} from 'react-native-popover-view';
 
+import { Page } from '@/components/page';
+import { SectionHeading } from '@/components/section-heading';
 import {
   CalendarHeart,
   Drop,
   Heartbeat,
   Info,
   Sparkle,
-  type Icon,
+  WarningCircle,
   WaveSine,
+  type Icon,
 } from '@/components/soft-icons';
-import { Page } from '@/components/page';
-import { SectionHeading } from '@/components/section-heading';
 import { TrendLine } from '@/components/trend-line';
 import { useAppData } from '@/data/app-data-provider';
 import type { ValueCount } from '@/domain/cycle-analysis';
@@ -20,6 +40,8 @@ import { Box, Text, theme } from '@/theme';
 
 export default function TrendsScreen() {
   const router = useRouter();
+  const [dailyNoteVisible, setDailyNoteVisible] = useState(false);
+  const noteButtonRef = useRef<View>(null);
   const { analysis, prediction, settings } = useAppData();
   const { cycle, daily } = analysis;
   const cycleLengths = cycle.cycleSamples.map(({ length }) => length);
@@ -33,6 +55,7 @@ export default function TrendsScreen() {
 
   return (
     <Page>
+      <MethodTicker />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -109,12 +132,33 @@ export default function TrendsScreen() {
           ) : null}
         </Box>
 
-        <Box marginTop="xxl">
-          <Box paddingHorizontal="page">
-            <SectionHeading
-              action={`${daily.recordedDayCount} 个记录日`}
-              title="每日观察"
-            />
+        <Box marginTop="xxl" style={styles.dailyObservationSection}>
+          <Box
+            alignItems="center"
+            flexDirection="row"
+            justifyContent="space-between"
+            paddingHorizontal="page"
+          >
+            <Box flex={1}>
+              <SectionHeading
+                title="每日观察"
+                extra={
+                  <Pressable
+                    accessibilityLabel="每日观察说明"
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: dailyNoteVisible }}
+                    onPress={() => setDailyNoteVisible((visible) => !visible)}
+                    ref={noteButtonRef}
+                    style={({ pressed }) => [
+                      styles.noteButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <WarningCircle color={theme.colors.textMuted} size={20} />
+                  </Pressable>
+                }
+              />
+            </Box>
           </Box>
           <Box style={styles.analysisGroup}>
             <AnalysisRow
@@ -142,18 +186,6 @@ export default function TrendsScreen() {
               isLast
               label={`症状 · ${daily.symptoms.observationCount} 天`}
             />
-          </Box>
-          <Box
-            alignItems="center"
-            flexDirection="row"
-            gap="s"
-            marginTop="m"
-            paddingHorizontal="page"
-          >
-            <Info color={theme.colors.textMuted} size={16} weight="duotone" />
-            <Text flex={1} variant="caption">
-              只统计主动填写的项目；未记录不等于没有流量、痛感或症状。
-            </Text>
           </Box>
         </Box>
 
@@ -221,22 +253,84 @@ export default function TrendsScreen() {
             )}
           </Box>
         </Box>
-
-        <Box
-          alignItems="flex-start"
-          flexDirection="row"
-          gap="s"
-          marginTop="l"
-          paddingHorizontal="page"
-        >
-          <WaveSine color={theme.colors.textMuted} size={17} weight="duotone" />
-          <Text flex={1} variant="caption">
-            预测采用最近 12 个有效周期间隔的中位数；少于 10 天和超过 90
-            天的间隔不参与计算。
-          </Text>
-        </Box>
       </ScrollView>
+      <Popover
+        arrowSize={{ height: 8, width: 16 }}
+        backgroundStyle={styles.popoverBackdrop}
+        isVisible={dailyNoteVisible}
+        mode={PopoverMode.JS_MODAL}
+        onCloseComplete={() => setDailyNoteVisible(false)}
+        onRequestClose={() => setDailyNoteVisible(false)}
+        placement={[PopoverPlacement.TOP, PopoverPlacement.BOTTOM]}
+        popoverStyle={styles.notePopover}
+        from={noteButtonRef as unknown as RefObject<Component>}
+      >
+        <Text style={styles.notePopoverText} variant="caption">
+          只统计主动填写的项目；未记录不等于没有流量、痛感或症状。
+        </Text>
+      </Popover>
     </Page>
+  );
+}
+
+const methodTickerText =
+  '预测采用最近 12 个有效周期间隔的中位数；少于 10 天和超过 90 天的间隔不参与计算。';
+
+function MethodTicker() {
+  const [translateX] = useState(() => new Animated.Value(0));
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  useEffect(() => {
+    if (!viewportWidth || trackWidth <= viewportWidth) {
+      translateX.stopAnimation();
+      translateX.setValue(0);
+      return;
+    }
+
+    const distance = trackWidth + 28;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.delay(900),
+        Animated.timing(translateX, {
+          duration: Math.max(7000, distance * 28),
+          easing: Easing.linear,
+          toValue: -distance,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          duration: 0,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [trackWidth, translateX, viewportWidth]);
+
+  function handleViewportLayout(event: LayoutChangeEvent) {
+    setViewportWidth(event.nativeEvent.layout.width);
+  }
+
+  function handleTrackLayout(event: LayoutChangeEvent) {
+    setTrackWidth(event.nativeEvent.layout.width);
+  }
+
+  return (
+    <View onLayout={handleViewportLayout} style={styles.methodTicker}>
+      <WaveSine color={theme.colors.textMuted} size={17} weight="duotone" />
+      <View style={styles.methodTickerViewport}>
+        <Animated.View
+          onLayout={handleTrackLayout}
+          style={[styles.methodTickerTrack, { transform: [{ translateX }] }]}
+        >
+          <Text numberOfLines={1} style={styles.methodTickerText}>
+            {methodTickerText}
+          </Text>
+        </Animated.View>
+      </View>
+    </View>
   );
 }
 
@@ -401,6 +495,31 @@ const styles = StyleSheet.create({
   methodText: {
     marginTop: 12,
   },
+  methodTicker: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.companionCashmere,
+    borderBottomColor: theme.colors.companionCashmereStrong,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.companionCashmereStrong,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 38,
+    overflow: 'hidden',
+    paddingHorizontal: 20,
+  },
+  methodTickerText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  methodTickerTrack: {
+    alignSelf: 'flex-start',
+  },
+  methodTickerViewport: {
+    flex: 1,
+    overflow: 'hidden',
+  },
   metricDivider: {
     backgroundColor: theme.colors.companionCashmereStrong,
     width: StyleSheet.hairlineWidth,
@@ -412,11 +531,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     boxShadow: `0 3px 8px ${theme.colors.companionShadow}, inset 0 1px 0 ${theme.colors.companionHighlight}`,
   },
+  pressed: {
+    opacity: 0.65,
+  },
   metricLabel: {
     color: theme.colors.textMuted,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 2,
     textAlign: 'center',
+  },
+  dailyObservationSection: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  noteButton: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: -8,
+    width: 32,
+  },
+  notePopover: {
+    backgroundColor: theme.colors.companionSurface,
+    borderColor: theme.colors.companionCashmereStrong,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    width: 280,
+  },
+  notePopoverText: {
+    color: theme.colors.companionInk,
+    lineHeight: 20,
+  },
+  popoverBackdrop: {
+    backgroundColor: 'transparent',
   },
 });

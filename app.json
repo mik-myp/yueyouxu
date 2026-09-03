@@ -31,6 +31,15 @@
         }
       ],
       "./plugins/with-android-release-signing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF8FA",
+          "image": "./assets/splash.png",
+          "imageWidth": 220,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-sqlite"
     ],
     "experiments": {

@@ -32,5 +32,6 @@ export { ShieldCheckIcon as ShieldCheck } from 'phosphor-react-native/src/icons/
 export { SlidersHorizontalIcon as SlidersHorizontal } from 'phosphor-react-native/src/icons/SlidersHorizontal';
 export { TrashSimpleIcon as TrashSimple } from 'phosphor-react-native/src/icons/TrashSimple';
 export { WaveSineIcon as WaveSine } from 'phosphor-react-native/src/icons/WaveSine';
+export { WarningCircleIcon as WarningCircle } from 'phosphor-react-native/src/icons/WarningCircle';
 export { XIcon as X } from 'phosphor-react-native/src/icons/X';
 export type { Icon } from 'phosphor-react-native';

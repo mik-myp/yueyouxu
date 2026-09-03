@@ -34,12 +34,14 @@ function dayAngle(day: number, cycleLength: number) {
 export function CycleArc({
   cycleDay = 1,
   cycleLength = 28,
+  daysUntilPrediction,
   periodActive = true,
   periodLength = 5,
   predictionLabel,
 }: {
   cycleDay?: number;
   cycleLength?: number;
+  daysUntilPrediction?: number;
   periodActive?: boolean;
   periodLength?: number;
   predictionLabel?: string;
@@ -108,7 +110,7 @@ export function CycleArc({
         <Box style={styles.phasePill}>
           <View style={styles.phaseDot} />
           <Text style={styles.phaseText}>
-            {periodActive ? '经期中' : '周期中'}
+            {periodActive ? '经期中' : '经期已结束'}
           </Text>
         </Box>
         <Box alignItems="baseline" flexDirection="row" gap="xs" marginTop="xs">
@@ -119,7 +121,9 @@ export function CycleArc({
         <Text style={styles.duration}>
           {periodActive
             ? `参考经期 ${periodLength} 天`
-            : (predictionLabel ?? '持续记录以优化预测')}
+            : predictionLabel
+              ? formatPredictionSummary(predictionLabel, daysUntilPrediction)
+              : '持续记录以优化预测'}
         </Text>
       </Box>
       <Box
@@ -137,6 +141,13 @@ export function CycleArc({
       </Box>
     </Box>
   );
+}
+
+function formatPredictionSummary(label: string, daysUntil?: number) {
+  if (daysUntil === undefined) return `下次经期 ${label}`;
+  if (daysUntil > 0) return `下次经期 ${label}\n还有 ${daysUntil} 天`;
+  if (daysUntil === 0) return `下次经期 ${label}\n今天`;
+  return `下次经期 ${label}\n已超过 ${Math.abs(daysUntil)} 天`;
 }
 
 function Legend({ color, label }: { color: string; label: string }) {
@@ -159,6 +170,10 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    width: '100%',
   },
   legendLine: {
     borderRadius: 3,

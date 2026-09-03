@@ -477,13 +477,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 14,
     borderCurve: 'continuous',
     borderTopRightRadius: 14,
-    right: 4,
   },
   bandStart: {
     borderBottomLeftRadius: 14,
     borderCurve: 'continuous',
     borderTopLeftRadius: 14,
-    left: 4,
   },
   calendar: {
     backgroundColor: theme.colors.companionCanvas,

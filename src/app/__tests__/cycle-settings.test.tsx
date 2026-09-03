@@ -67,4 +67,42 @@ describe('CycleSettingsScreen', () => {
     expect(screen.getByText('6 天')).toBeTruthy();
     expect(screen.getByText('固定预测值')).toBeTruthy();
   });
+
+  it('shows calculated bases when automatic analysis has enough samples', async () => {
+    const savePredictionSettings = jest.fn();
+    mockUseAppData.mockReturnValue({
+      analysis: {
+        cycle: {
+          cycleSamples: [
+            {
+              fromStartDate: '2026-01-01',
+              length: 30,
+              toStartDate: '2026-01-31',
+            },
+          ],
+          periodLengths: [5, 6],
+          typicalCycleLength: 30,
+          typicalPeriodLength: 6,
+        },
+      },
+      error: null,
+      loading: false,
+      savePredictionSettings,
+      settings: {
+        automaticCalculation: true,
+        onboardingCompleted: true,
+        referenceCycleLength: 28,
+        referencePeriodLength: 5,
+        timeZone: 'Asia/Shanghai',
+        updatedAt: '2026-09-02T00:00:00.000Z',
+      },
+    });
+
+    await renderScreen();
+
+    expect(screen.getByText('30 天')).toBeTruthy();
+    expect(screen.getByText('6 天')).toBeTruthy();
+    expect(screen.getByText('最近 1 个有效间隔的中位数')).toBeTruthy();
+    expect(screen.getByText('最近 2 条完整经期记录的中位数')).toBeTruthy();
+  });
 });
