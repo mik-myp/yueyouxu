@@ -1,5 +1,7 @@
 export { ArrowRightIcon as ArrowRight } from 'phosphor-react-native/src/icons/ArrowRight';
 export { ArrowClockwiseIcon as ArrowClockwise } from 'phosphor-react-native/src/icons/ArrowClockwise';
+export { ArrowDownIcon as ArrowDown } from 'phosphor-react-native/src/icons/ArrowDown';
+export { ArrowUpIcon as ArrowUp } from 'phosphor-react-native/src/icons/ArrowUp';
 export { CalendarHeartIcon as CalendarHeart } from 'phosphor-react-native/src/icons/CalendarHeart';
 export { CalendarPlusIcon as CalendarPlus } from 'phosphor-react-native/src/icons/CalendarPlus';
 export { CalendarDotsIcon as CalendarDots } from 'phosphor-react-native/src/icons/CalendarDots';
@@ -25,6 +27,8 @@ export { PauseIcon as Pause } from 'phosphor-react-native/src/icons/Pause';
 export { PlayIcon as Play } from 'phosphor-react-native/src/icons/Play';
 export { PlusIcon as Plus } from 'phosphor-react-native/src/icons/Plus';
 export { SparkleIcon as Sparkle } from 'phosphor-react-native/src/icons/Sparkle';
+export { NotePencilIcon as NotePencil } from 'phosphor-react-native/src/icons/NotePencil';
+export { SelectionIcon as Selection } from 'phosphor-react-native/src/icons/Selection';
 export { ShieldCheckIcon as ShieldCheck } from 'phosphor-react-native/src/icons/ShieldCheck';
 export { SlidersHorizontalIcon as SlidersHorizontal } from 'phosphor-react-native/src/icons/SlidersHorizontal';
 export { TrashSimpleIcon as TrashSimple } from 'phosphor-react-native/src/icons/TrashSimple';

@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import {
@@ -18,6 +19,7 @@ import { differenceInLocalDays } from '@/domain/local-date';
 import { Box, Text, theme } from '@/theme';
 
 export default function TrendsScreen() {
+  const router = useRouter();
   const { analysis, prediction, settings } = useAppData();
   const { cycle, daily } = analysis;
   const cycleLengths = cycle.cycleSamples.map(({ length }) => length);
@@ -27,6 +29,7 @@ export default function TrendsScreen() {
     cycle.typicalPeriodLength ?? settings?.referencePeriodLength ?? 5;
   const excludedCount =
     cycle.excludedShortIntervalCount + cycle.excludedLongIntervalCount;
+  const recentPeriods = cycle.orderedPeriods.slice(-3);
 
   return (
     <Page>
@@ -157,18 +160,19 @@ export default function TrendsScreen() {
         <Box marginTop="xxl">
           <Box paddingHorizontal="page">
             <SectionHeading
-              action={`${cycle.orderedPeriods.length} 条记录`}
+              action="更多记录"
+              onActionPress={() => router.push('../period-history')}
               title="历史经期"
             />
           </Box>
           <Box style={styles.historyGroup}>
-            {cycle.orderedPeriods.length ? (
-              [...cycle.orderedPeriods].reverse().map((item, index) => (
+            {recentPeriods.length ? (
+              [...recentPeriods].reverse().map((item, index) => (
                 <Box
                   alignItems="center"
                   borderBottomColor="companionCashmereStrong"
                   borderBottomWidth={
-                    index === cycle.orderedPeriods.length - 1
+                    index === recentPeriods.length - 1
                       ? 0
                       : StyleSheet.hairlineWidth
                   }

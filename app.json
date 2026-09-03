@@ -2,7 +2,7 @@
   "expo": {
     "name": "月有序",
     "slug": "yueyouxu",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "scheme": "yueyouxu",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.mikmyp.yueyouxu",
-      "versionCode": 1,
+      "versionCode": 2,
       "predictiveBackGestureEnabled": false
     },
     "web": {

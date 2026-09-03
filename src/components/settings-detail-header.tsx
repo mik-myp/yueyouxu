@@ -10,7 +10,7 @@ export function SettingsDetailHeader({ title }: { title: string }) {
   return (
     <Box alignItems="center" flexDirection="row" paddingHorizontal="page">
       <Pressable
-        accessibilityLabel="返回设置"
+        accessibilityLabel="返回上一页"
         accessibilityRole="button"
         onPress={() => router.back()}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}

@@ -1,9 +1,4 @@
-import {
-  Database,
-  DeviceMobile,
-  TrashSimple,
-  type Icon,
-} from '@/components/soft-icons';
+import { DeviceMobile, TrashSimple, type Icon } from '@/components/soft-icons';
 import { useRouter } from 'expo-router';
 import {
   Alert,
@@ -58,16 +53,9 @@ export default function PrivacyDataScreen() {
               accent={theme.colors.companionSage}
               description="记录保存在当前设备"
               icon={DeviceMobile}
+              isLast
               label="本地存储"
               value="已启用"
-            />
-            <StatusRow
-              accent={theme.colors.companionApricot}
-              description="尚未连接账户或云端"
-              icon={Database}
-              isLast
-              label="云端同步"
-              value="未连接"
             />
           </Box>
         </Box>
